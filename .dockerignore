@@ -1,0 +1,10 @@
+.git
+.gitignore
+.env
+node_modules
+max-web/node_modules
+dist
+max-web/dist
+npm-debug.log
+max-web/npm-debug.log
+*.log
