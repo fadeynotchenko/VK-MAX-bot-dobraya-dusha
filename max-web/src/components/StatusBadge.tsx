@@ -1,5 +1,4 @@
 import { type CSSProperties } from 'react';
-import { colors } from './theme';
 
 type StatusBadgeProps = {
   status: string;
