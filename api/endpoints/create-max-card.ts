@@ -10,10 +10,8 @@ function ensureString(value: unknown): value is string {
 
 export async function handleCreateMaxCard(req: FastifyRequest, reply: FastifyReply) {
   try {
-    // Парсим текстовые поля из multipart
     const fields: Record<string, string> = {};
     
-    // Обрабатываем все части multipart
     let imageFile: { buffer: Buffer; filename: string; mimetype: string } | null = null;
     
     for await (const part of req.parts()) {
@@ -66,6 +64,15 @@ export async function handleCreateMaxCard(req: FastifyRequest, reply: FastifyRep
       req.log.warn('⚠️ Изображение не было загружено');
     }
 
+    // Извлекаем user_id, если он передан
+    let userId: number | undefined;
+    if (fields.user_id) {
+      const parsedUserId = Number(fields.user_id);
+      if (!isNaN(parsedUserId) && parsedUserId > 0) {
+        userId = parsedUserId;
+      }
+    }
+
     const payload: MaxCardInput = {
       category: fields.category!.trim(),
       title: fields.title!.trim(),
@@ -74,6 +81,7 @@ export async function handleCreateMaxCard(req: FastifyRequest, reply: FastifyRep
       status: fields.status!.trim(),
       ...(ensureString(fields.link) && fields.link.trim().length > 0 ? { link: fields.link.trim() } : {}),
       ...(imageBase64 ? { image: imageBase64 } : {}),
+      ...(userId ? { user_id: userId } : {}),
     };
 
     const card = await createMaxCard(payload);

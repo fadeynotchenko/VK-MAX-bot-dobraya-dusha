@@ -6,6 +6,7 @@ type MaxCardDocument = Omit<MaxCard, 'id' | 'date'> & {
   _id?: ObjectId;
   date: Date;
   image?: string; // base64 строка изображения
+  user_id?: number; // ID пользователя MAX
 };
 
 type InsertableMaxCardDocument = OptionalUnlessRequiredId<MaxCardDocument>;
@@ -31,6 +32,7 @@ export async function getMaxCards(): Promise<MaxCard[]> {
     date: doc.date.toISOString(),
     ...(doc.link ? { link: doc.link } : {}),
     ...(doc.image ? { image: doc.image } : {}),
+    ...(doc.user_id ? { user_id: doc.user_id } : {}),
   }));
 }
 
@@ -49,6 +51,7 @@ export async function createMaxCard(card: MaxCardInput): Promise<MaxCard> {
     date: new Date(),
     ...(card.link ? { link: card.link } : {}),
     ...(card.image ? { image: card.image } : {}),
+    ...(card.user_id ? { user_id: card.user_id } : {}),
   };
 
   const result = await db.collection<MaxCardDocument>('max_cards').insertOne(document);

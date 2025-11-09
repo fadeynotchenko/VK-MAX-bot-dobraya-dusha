@@ -2,11 +2,13 @@ import { useEffect, useId, useState, type ChangeEvent, type CSSProperties } from
 import { Button, Input, Textarea, Typography } from '@maxhub/max-ui';
 import { colors, layout } from './theme';
 import { createMaxCardFromUI } from '../../api-caller/create-max-card.ts';
-import type { MaxCard } from '../../api-caller/get-max-cards.ts';
+import { getMaxUser } from '../utils/maxBridge.ts';
+import { ModerationAlert } from './ModerationAlert';
 
 type CreateInitiativeScreenProps = {
   onBack: () => void;
-  onCardCreated?: (card: MaxCard) => void;
+  // onCardCreated больше не используется, так как карточки на модерации не добавляются в список
+  // onCardCreated?: (card: MaxCard) => void;
 };
 
 type CategoryOption = {
@@ -134,7 +136,7 @@ const categoryOptions: CategoryOption[] = [
   { value: 'волонтерство', label: 'Волонтерство', Icon: HandsIcon },
 ];
 
-export function CreateInitiativeScreen({ onBack, onCardCreated }: CreateInitiativeScreenProps) {
+export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) {
   const uploadInputId = useId();
   const [category, setCategory] = useState<string>(categoryOptions[0]?.value ?? '');
   const [title, setTitle] = useState('');
@@ -146,6 +148,7 @@ export function CreateInitiativeScreen({ onBack, onCardCreated }: CreateInitiati
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showModerationAlert, setShowModerationAlert] = useState(false);
   const isFormValid =
     title.trim().length > 0 &&
     shortDescription.trim().length > 0 &&
@@ -181,6 +184,9 @@ export function CreateInitiativeScreen({ onBack, onCardCreated }: CreateInitiati
     setSubmitError(null);
 
     try {
+      // Получаем ID пользователя из MAX Bridge
+      const maxUser = getMaxUser();
+      
       const payload = {
         category: categoryLabel,
         title: title.trim(),
@@ -189,9 +195,11 @@ export function CreateInitiativeScreen({ onBack, onCardCreated }: CreateInitiati
         status: 'moderate',
         ...(trimmedLink ? { link: trimmedLink } : {}),
         ...(imageFile ? { image: imageFile } : {}),
+        ...(maxUser ? { user_id: maxUser.id } : {}),
       };
-      const card = await createMaxCardFromUI(payload);
+      await createMaxCardFromUI(payload);
 
+      // Очищаем форму
       setCategory(categoryOptions[0]?.value ?? '');
       setTitle('');
       setShortDescription('');
@@ -206,8 +214,12 @@ export function CreateInitiativeScreen({ onBack, onCardCreated }: CreateInitiati
         return null;
       });
 
-      onCardCreated?.(card);
-      onBack();
+      // Показываем алерт о модерации
+      setShowModerationAlert(true);
+      
+      // НЕ добавляем карточку в список и НЕ вызываем onCardCreated,
+      // так как карточка со статусом "moderate" не должна отображаться
+      // Возвращаемся на экран профиля после закрытия алерта
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Не удалось опубликовать инициативу';
@@ -225,8 +237,15 @@ export function CreateInitiativeScreen({ onBack, onCardCreated }: CreateInitiati
     };
   }, [imagePreview]);
 
+  const handleAlertClose = () => {
+    setShowModerationAlert(false);
+    onBack();
+  };
+
   return (
     <div style={containerStyle}>
+      <ModerationAlert visible={showModerationAlert} onClose={handleAlertClose} />
+      
       <button type="button" onClick={onBack} style={backButtonStyle}>
         <ArrowLeftIcon />
         Назад

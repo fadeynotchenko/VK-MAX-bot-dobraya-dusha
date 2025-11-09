@@ -85,10 +85,6 @@ export default function App() {
       : cards.filter((card) => card.category?.trim().toLowerCase() === activeFilter);
   const hasFilteredCards = filteredCards.length > 0;
 
-  const handleCardCreated = (card: MaxCard) => {
-    setCards((prev) => [card, ...prev]);
-  };
-
   const pageWrapperStyle: CSSProperties = {
     height: '100dvh',
     width: '100%',
@@ -192,7 +188,6 @@ export default function App() {
       return (
         <CreateInitiativeScreen
           onBack={() => setProfileView('overview')}
-          onCardCreated={handleCardCreated}
         />
       );
     }

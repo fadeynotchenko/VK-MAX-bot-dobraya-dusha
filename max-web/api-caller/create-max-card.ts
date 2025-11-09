@@ -6,8 +6,9 @@ type CreateMaxCardResponse =
   | { ok: true; data: MaxCard }
   | { ok: false; error: string };
 
-export type CreateMaxCardPayload = Omit<MaxCardCreatePayload, 'image'> & {
+export type CreateMaxCardPayload = Omit<MaxCardCreatePayload, 'image' | 'user_id'> & {
   image?: File | null;
+  user_id?: number;
 };
 
 export async function createMaxCardFromUI(payload: CreateMaxCardPayload): Promise<MaxCard> {
@@ -22,6 +23,11 @@ export async function createMaxCardFromUI(payload: CreateMaxCardPayload): Promis
   
   if (payload.link) {
     formData.append('link', payload.link);
+  }
+  
+  // Добавляем ID пользователя, если он передан
+  if (payload.user_id !== undefined) {
+    formData.append('user_id', payload.user_id.toString());
   }
   
   // Добавляем файл изображения, если он есть
