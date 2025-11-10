@@ -3,12 +3,11 @@ import { Button, Textarea, Typography } from '@maxhub/max-ui';
 import { colors, layout } from './theme';
 import { createMaxCardFromUI } from '../../api-caller/create-max-card.ts';
 import { getMaxUser } from '../utils/maxBridge.ts';
+import { userCardsCache } from '../utils/userCardsCache.ts';
 import { ModerationAlert } from './ModerationAlert';
 
 type CreateInitiativeScreenProps = {
   onBack: () => void;
-  // onCardCreated больше не используется, так как карточки на модерации не добавляются в список
-  // onCardCreated?: (card: MaxCard) => void;
 };
 
 type CategoryOption = {
@@ -25,8 +24,10 @@ const containerStyle: CSSProperties = {
   padding: `0 ${layout.contentXPadding} 40px`,
   color: colors.textPrimary,
   width: '100%',
+  maxWidth: '100%',
   minWidth: 0,
   boxSizing: 'border-box',
+  overflowX: 'hidden',
 };
 
 const backButtonStyle: CSSProperties = {
@@ -58,6 +59,8 @@ const uploadCardStyle: CSSProperties = {
   gap: 16,
   cursor: 'pointer',
   width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
   boxSizing: 'border-box',
 };
 
@@ -76,6 +79,7 @@ const uploadAreaStyle: CSSProperties = {
   overflow: 'hidden',
   boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.05)',
   boxSizing: 'border-box',
+  minWidth: 0,
 };
 
 const uploadHintStyle: CSSProperties = {
@@ -111,6 +115,9 @@ const fieldGroupStyle: CSSProperties = {
   flexDirection: 'column',
   gap: 12,
   width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
+  boxSizing: 'border-box',
 };
 
 const labelStyle: CSSProperties = {
@@ -272,7 +279,21 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
         ...(imageFile ? { image: imageFile } : {}),
         ...(maxUser ? { user_id: maxUser.id } : {}),
       };
-      await createMaxCardFromUI(payload);
+      const createdCard = await createMaxCardFromUI(payload);
+
+      // Инвалидируем кеш, чтобы новые карточки появились реактивно
+      // (даже если карточка на модерации, обновляем кеш для будущих обновлений)
+      if (maxUser?.id) {
+        // Если карточка уже принята (статус accepted), добавляем её в кеш оптимистично
+        if (createdCard.status === 'accepted') {
+          userCardsCache.addCardToCache(maxUser.id, createdCard);
+        } else {
+          // Иначе просто инвалидируем кеш для следующей загрузки
+          userCardsCache.invalidateUserCache(maxUser.id).catch((err) => {
+            console.error('Failed to invalidate cache:', err);
+          });
+        }
+      }
 
       // Очищаем форму
       setCategory(categoryOptions[0]?.value ?? '');
@@ -291,10 +312,6 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
 
       // Показываем алерт о модерации
       setShowModerationAlert(true);
-      
-      // НЕ добавляем карточку в список и НЕ вызываем onCardCreated,
-      // так как карточка со статусом "moderate" не должна отображаться
-      // Возвращаемся на экран профиля после закрытия алерта
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Не удалось опубликовать инициативу';
@@ -346,7 +363,14 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
             <img
               src={imagePreview}
               alt="Предпросмотр обложки"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                maxWidth: '100%',
+                objectFit: 'cover', 
+                objectPosition: 'center',
+                display: 'block',
+              }}
             />
           ) : (
             <UploadIcon />
@@ -389,7 +413,7 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
 
       <div style={fieldGroupStyle}>
         <Typography.Label style={labelStyle}>Название</Typography.Label>
-        <div style={{ width: '100%' }}>
+        <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
           <Textarea
             mode="secondary"
             placeholder="Название инициативы"
@@ -411,7 +435,7 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
 
       <div style={fieldGroupStyle}>
         <Typography.Label style={labelStyle}>Краткое описание</Typography.Label>
-        <div style={{ width: '100%' }}>
+        <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
           <Textarea
             mode="secondary"
             placeholder="Расскажите кратко о мероприятии"
@@ -433,7 +457,7 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
 
       <div style={fieldGroupStyle}>
         <Typography.Label style={labelStyle}>Описание</Typography.Label>
-        <div style={{ width: '100%' }}>
+        <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
           <Textarea
             mode="secondary"
             placeholder="Расскажите о мероприятии"
@@ -456,7 +480,7 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
 
       <div style={fieldGroupStyle}>
         <Typography.Label style={labelStyle}>Ссылка на мероприятие</Typography.Label>
-        <div style={{ width: '100%' }}>
+        <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
           <Textarea
             mode="secondary"
             placeholder="https://example.ru"

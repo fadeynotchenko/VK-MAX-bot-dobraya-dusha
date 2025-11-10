@@ -2,7 +2,8 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { Typography, Button, Spinner } from '@maxhub/max-ui';
 import { colors, layout } from './theme';
 import { getMaxUser, getUserFullName, getUserInitials, type MaxUser } from '../utils/maxBridge';
-import { fetchUserCardsFromUI, type MaxCard } from '../../api-caller/get-user-cards.ts';
+import type { MaxCard } from '../../api-caller/get-user-cards.ts';
+import { userCardsCache } from '../utils/userCardsCache.ts';
 import { UserCardView } from './UserCardView';
 import { MaxCardDetail } from './MaxCardDetail';
 
@@ -183,7 +184,9 @@ export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
     setLoading(true);
     setError(null);
 
-    fetchUserCardsFromUI(user.id)
+    // Загружаем карточки из кеша (или загружаем, если кеша нет)
+    userCardsCache
+      .getUserCards(user.id)
       .then((data) => {
         if (isMounted) {
           setCards(data);
@@ -201,8 +204,16 @@ export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
         }
       });
 
+    // Подписываемся на изменения кеша для реактивного обновления
+    const unsubscribe = userCardsCache.subscribe((userId, cachedCards) => {
+      if (userId === user.id && isMounted) {
+        setCards(cachedCards);
+      }
+    });
+
     return () => {
       isMounted = false;
+      unsubscribe();
     };
   }, [user?.id]);
 
@@ -281,7 +292,8 @@ export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
             if (user?.id) {
               setError(null);
               setLoading(true);
-              fetchUserCardsFromUI(user.id)
+              userCardsCache
+                .getUserCards(user.id, true) // Принудительно обновляем кеш
                 .then((data) => {
                   setCards(data);
                 })

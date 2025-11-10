@@ -4,6 +4,9 @@ import { colors, layout } from './theme';
 const rootStyle: CSSProperties = {
   backgroundColor: colors.backgroundPrimary,
   minHeight: '100dvh',
+  width: '100%',
+  maxWidth: '100%',
+  overflowX: 'hidden',
 };
 
 const baseStyle: CSSProperties = {

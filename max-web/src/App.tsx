@@ -185,7 +185,9 @@ export default function App() {
   const pageWrapperStyle: CSSProperties = {
     height: '100dvh',
     width: '100%',
+    maxWidth: '100%',
     overflowY: 'auto',
+    overflowX: 'hidden',
     backgroundColor: colors.backgroundPrimary,
   };
 
@@ -193,7 +195,10 @@ export default function App() {
     flex: 1,
     display: 'flex',
     width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
     minHeight: 0,
+    overflowX: 'hidden',
   };
 
   const scrollContainerStyle: CSSProperties = {
@@ -202,7 +207,11 @@ export default function App() {
     flexDirection: 'column',
     gap: activeTab === 'home' && !selectedCard ? 24 : 0,
     minHeight: 0,
+    minWidth: 0,
+    width: '100%',
+    maxWidth: '100%',
     paddingBottom: layout.bottomInset,
+    overflowX: 'hidden',
   };
 
   const listAreaStyle: CSSProperties = {
