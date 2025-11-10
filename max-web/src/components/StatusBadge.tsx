@@ -21,18 +21,18 @@ const baseStyle: CSSProperties = {
 const STATUS_CONFIG: Record<string, { label: string; background: string; text: string }> = {
   moderate: {
     label: 'На модерации',
-    background: 'rgba(255, 193, 7, 0.2)',
-    text: '#ffc107',
+    background: '#ffc107',
+    text: '#1b1b22',
   },
   accepted: {
     label: 'Опубликовано',
-    background: 'rgba(76, 175, 80, 0.2)',
-    text: '#4caf50',
+    background: '#4caf50',
+    text: '#ffffff',
   },
   rejected: {
     label: 'Отклонено',
-    background: 'rgba(244, 67, 54, 0.2)',
-    text: '#f44336',
+    background: '#f44336',
+    text: '#ffffff',
   },
 };
 

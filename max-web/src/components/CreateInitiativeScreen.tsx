@@ -24,6 +24,9 @@ const containerStyle: CSSProperties = {
   gap: 24,
   padding: `0 ${layout.contentXPadding} 40px`,
   color: colors.textPrimary,
+  width: '100%',
+  minWidth: 0,
+  boxSizing: 'border-box',
 };
 
 const backButtonStyle: CSSProperties = {
@@ -54,10 +57,13 @@ const uploadCardStyle: CSSProperties = {
   alignItems: 'center',
   gap: 16,
   cursor: 'pointer',
+  width: '100%',
+  boxSizing: 'border-box',
 };
 
 const uploadAreaStyle: CSSProperties = {
   width: '100%',
+  maxWidth: '100%',
   borderRadius: layout.cornerRadius,
   border: '1px solid rgba(255, 255, 255, 0.12)',
   background: colors.cardGradient,
@@ -69,6 +75,7 @@ const uploadAreaStyle: CSSProperties = {
   justifyContent: 'center',
   overflow: 'hidden',
   boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.05)',
+  boxSizing: 'border-box',
 };
 
 const uploadHintStyle: CSSProperties = {
@@ -83,6 +90,7 @@ const categorySectionStyle: CSSProperties = {
 
 const categoryButtonStyle: CSSProperties = {
   width: '100%',
+  maxWidth: '100%',
   borderRadius: 20,
   padding: '16px 20px',
   display: 'flex',
@@ -95,6 +103,7 @@ const categoryButtonStyle: CSSProperties = {
   color: colors.textPrimary,
   cursor: 'pointer',
   transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease',
+  boxSizing: 'border-box',
 };
 
 const fieldGroupStyle: CSSProperties = {
@@ -112,18 +121,24 @@ const labelStyle: CSSProperties = {
 
 const inputStyle: CSSProperties = {
   width: '100%',
+  maxWidth: '100%',
   borderRadius: 18,
-  border: '1px solid rgba(255, 255, 255, 0.08)',
-  backgroundColor: colors.detailSurface,
+  border: '1px solid rgba(43, 71, 255, 0.25)',
+  backgroundColor: 'rgba(43, 71, 255, 0.12)',
   color: colors.textPrimary,
   padding: '14px 18px',
   fontSize: 16,
+  boxSizing: 'border-box',
+  boxShadow: 'inset 0 1px 2px rgba(43, 71, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.2)',
 };
 
 const textareaStyle: CSSProperties = {
   ...inputStyle,
   minHeight: 112,
   resize: 'vertical',
+  border: '1px solid rgba(43, 71, 255, 0.25)',
+  backgroundColor: 'rgba(43, 71, 255, 0.12)',
+  boxShadow: 'inset 0 1px 2px rgba(43, 71, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.2)',
 };
 
 const actionAreaStyle: CSSProperties = {

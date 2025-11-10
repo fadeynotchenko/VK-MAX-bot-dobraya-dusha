@@ -38,7 +38,7 @@ export const shadows = {
 
 export const layout = {
   cornerRadius: 24,
-  contentXPadding: 'clamp(16px, 6vw, 24px)',
+  contentXPadding: 'clamp(8px, 2.5vw, 16px)',
   bottomInset: 'calc(env(safe-area-inset-bottom, 0px) + 120px)',
   pageWidth: 'min(600px, 100%)',
 };

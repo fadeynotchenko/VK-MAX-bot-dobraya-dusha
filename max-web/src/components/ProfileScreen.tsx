@@ -6,6 +6,64 @@ import { fetchUserCardsFromUI, type MaxCard } from '../../api-caller/get-user-ca
 import { UserCardView } from './UserCardView';
 import { MaxCardDetail } from './MaxCardDetail';
 
+type ErrorScreenProps = {
+  error: string;
+  onRetry: () => void;
+};
+
+const errorScreenStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '48px 24px',
+  textAlign: 'center',
+  gap: 20,
+  minHeight: 300,
+};
+
+const errorIconStyle: CSSProperties = {
+  fontSize: 64,
+  color: colors.error,
+  opacity: 0.8,
+};
+
+const errorTextStyle: CSSProperties = {
+  color: colors.textPrimary,
+  fontSize: 18,
+  fontWeight: 600,
+  margin: 0,
+};
+
+const errorMessageStyle: CSSProperties = {
+  color: colors.textSecondary,
+  fontSize: 14,
+  margin: 0,
+  maxWidth: 400,
+};
+
+function ErrorScreen({ error, onRetry }: ErrorScreenProps) {
+  return (
+    <div style={errorScreenStyle}>
+      <div style={errorIconStyle}>⚠️</div>
+      <Typography.Title style={errorTextStyle}>
+        Не удалось загрузить инициативы
+      </Typography.Title>
+      <Typography.Body style={errorMessageStyle}>
+        {error}
+      </Typography.Body>
+      <Button
+        mode="primary"
+        size="large"
+        onClick={onRetry}
+        style={{ marginTop: 8 }}
+      >
+        Попробовать снова
+      </Button>
+    </div>
+  );
+}
+
 type ProfileScreenProps = {
   onCreateInitiative: () => void;
 };
@@ -82,7 +140,7 @@ const cardsListStyle: CSSProperties = {
   padding: `0 0 24px`,
   display: 'flex',
   flexDirection: 'column',
-  gap: 24,
+  gap: 16,
 };
 
 const emptyStateStyle: CSSProperties = {
@@ -201,14 +259,14 @@ export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
         Создать инициативу
       </Button>
 
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: 24 }}>
         <Typography.Title
           style={{
             margin: 0,
             fontSize: 20,
             fontWeight: 700,
             color: colors.textPrimary,
-            marginBottom: 16,
+            marginBottom: 20,
           }}
         >
           Мои инициативы
@@ -219,9 +277,23 @@ export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
             <Spinner size={32} appearance="primary" />
           </div>
         ) : error ? (
-          <Typography.Body style={{ color: colors.error, padding: '32px 0' }}>
-            Не удалось загрузить инициативы: {error}
-          </Typography.Body>
+          <ErrorScreen error={error} onRetry={() => {
+            if (user?.id) {
+              setError(null);
+              setLoading(true);
+              fetchUserCardsFromUI(user.id)
+                .then((data) => {
+                  setCards(data);
+                })
+                .catch((err) => {
+                  const message = err instanceof Error ? err.message : String(err);
+                  setError(message);
+                })
+                .finally(() => {
+                  setLoading(false);
+                });
+            }
+          }} />
         ) : cards.length === 0 ? (
           <div style={emptyStateStyle}>
             <Typography.Body style={{ color: colors.textSecondary }}>
