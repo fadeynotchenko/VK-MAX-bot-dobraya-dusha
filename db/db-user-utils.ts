@@ -55,3 +55,36 @@ export async function saveLastViewCount(user_id: number, viewCount: number): Pro
     { upsert: true }
   );
 }
+
+/**
+ * Получает ID последнего отправленного мотивационного сообщения для пользователя.
+ * 
+ * @param user_id - идентификатор пользователя
+ * @returns ID сообщения или null, если сообщение не было отправлено
+ */
+export async function getLastMotivationalMessageId(user_id: number): Promise<string | null> {
+  const user = await db.collection('max_users').findOne(
+    { user_id: user_id },
+    { projection: { lastMotivationalMessageId: 1 } }
+  );
+  
+  return (user?.lastMotivationalMessageId as string) || null;
+}
+
+/**
+ * Сохраняет ID последнего отправленного мотивационного сообщения для пользователя.
+ * 
+ * @param user_id - идентификатор пользователя
+ * @param messageId - ID сообщения
+ */
+export async function saveLastMotivationalMessageId(user_id: number, messageId: string): Promise<void> {
+  await db.collection('max_users').updateOne(
+    { user_id: user_id },
+    {
+      $set: {
+        lastMotivationalMessageId: messageId,
+      }
+    },
+    { upsert: true }
+  );
+}

@@ -1,6 +1,6 @@
 import type { Bot } from '@maxhub/max-bot-api';
 import { getUserTotalViewCount } from '../../db/db-card-views-utils.ts';
-import { getLastViewCount, saveLastViewCount } from '../../db/db-user-utils.ts';
+import { getLastViewCount, saveLastViewCount, getLastMotivationalMessageId, saveLastMotivationalMessageId } from '../../db/db-user-utils.ts';
 
 const MOTIVATION_MESSAGES: readonly string[] = [
   'Продолжайте исследовать инициативы — каждая может стать вашим шансом помочь!',
@@ -41,7 +41,21 @@ function generateMotivationalMessage(viewsThisSession: number, totalViews: numbe
 }
 
 /**
- * Проверяет и отправляет мотивационное сообщение пользователю при закрытии мини-приложения.
+ * Проверяет, является ли сообщение статистическим.
+ * 
+ * @param messageText - текст сообщения
+ * @returns true, если сообщение содержит статистику
+ */
+function isStatisticsMessage(messageText: string | null): boolean {
+  if (!messageText) return false;
+  return messageText.includes('📊 Статистика:');
+}
+
+/**
+ * Проверяет и отправляет/редактирует мотивационное сообщение пользователю при закрытии мини-приложения.
+ * 
+ * Если у пользователя уже есть статистическое сообщение, редактирует его.
+ * Если последнее сообщение не является статистическим или его нет, отправляет новое.
  * 
  * Отправляет сообщение со статистикой: сколько просмотрено за эту сессию и всего.
  * Включает случайную мотивацию из 3-4 вариантов.
@@ -51,16 +65,37 @@ function generateMotivationalMessage(viewsThisSession: number, totalViews: numbe
  */
 export async function checkAndSendMotivationalMessage(bot: Bot, userId: number): Promise<void> {
   try {
-    const [totalViewCount, lastViewCount] = await Promise.all([
+    const [totalViewCount, lastViewCount, lastMessageId] = await Promise.all([
       getUserTotalViewCount(userId),
       getLastViewCount(userId),
+      getLastMotivationalMessageId(userId),
     ]);
 
     const viewsThisSession = Math.max(0, totalViewCount - lastViewCount);
-    
     const message = generateMotivationalMessage(viewsThisSession, totalViewCount);
     
-    await bot.api.sendMessageToUser(userId, message);
+    if (lastMessageId) {
+      try {
+        const lastMessage = await bot.api.getMessage(lastMessageId);
+        if (isStatisticsMessage(lastMessage.body.text)) {
+          await bot.api.editMessage(lastMessageId, { text: message });
+        } else {
+          const newMessage = await bot.api.sendMessageToUser(userId, message);
+          await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+        }
+      } catch (getError: any) {
+        if (getError?.message?.includes('not found') || getError?.message?.includes('not exist')) {
+          const newMessage = await bot.api.sendMessageToUser(userId, message);
+          await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+        } else {
+          throw getError;
+        }
+      }
+    } else {
+      const newMessage = await bot.api.sendMessageToUser(userId, message);
+      await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+    }
+    
     await saveLastViewCount(userId, totalViewCount);
   } catch (error) {
     throw error;
