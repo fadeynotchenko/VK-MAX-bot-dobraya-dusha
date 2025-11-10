@@ -113,3 +113,23 @@ export async function getCardViewCount(cardId: string, userId: number): Promise<
   return view?.view_count ?? 0;
 }
 
+/**
+ * Получает общее количество просмотров всех карточек пользователем.
+ * 
+ * @param userId - ID пользователя MAX
+ * @returns Общее количество просмотров всех карточек
+ * 
+ * Успешное выполнение возвращает сумму всех view_count для пользователя.
+ * В случае ошибки пробрасывает исключение MongoDB.
+ */
+export async function getUserTotalViewCount(userId: number): Promise<number> {
+  const result = await db.collection<CardViewDocument>('card_views')
+    .aggregate([
+      { $match: { user_id: userId } },
+      { $group: { _id: null, total: { $sum: '$view_count' } } },
+    ])
+    .toArray();
+  
+  return result[0]?.total ?? 0;
+}
+
