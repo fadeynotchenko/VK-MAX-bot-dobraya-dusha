@@ -98,3 +98,35 @@ export function isMaxBridgeAvailable(): boolean {
   return typeof window.WebApp !== 'undefined';
 }
 
+/**
+ * Подписывается на событие закрытия мини-приложения.
+ * Вызывает callback при закрытии приложения (viewportChanged с isStateVisible: false).
+ * 
+ * @param callback - функция, которая будет вызвана при закрытии приложения
+ * @returns функция для отписки от события
+ */
+export function onAppClose(callback: () => void): () => void {
+  if (!window.WebApp?.onEvent) {
+    console.warn('⚠️ MAX Bridge onEvent is not available');
+    return () => {};
+  }
+
+  const handleViewportChanged = (data: any) => {
+    // Событие viewportChanged с isStateVisible: false означает закрытие мини-приложения
+    if (data?.isStateVisible === false) {
+      console.log('📱 App close event detected (viewportChanged with isStateVisible: false)');
+      callback();
+    }
+  };
+
+  // Подписываемся на событие viewportChanged
+  window.WebApp.onEvent('viewportChanged', handleViewportChanged);
+
+  // Возвращаем функцию для отписки
+  return () => {
+    if (window.WebApp?.offEvent) {
+      window.WebApp.offEvent('viewportChanged', handleViewportChanged);
+    }
+  };
+}
+

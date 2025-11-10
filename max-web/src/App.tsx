@@ -12,7 +12,8 @@ import { CreateInitiativeScreen } from './components/CreateInitiativeScreen';
 import { colors, layout } from './components/theme';
 import { trackCardViewFromUI } from '../api-caller/track-card-view.ts';
 import { fetchViewedCardsFromUI } from '../api-caller/get-viewed-cards.ts';
-import { getMaxUser } from './utils/maxBridge.ts';
+import { getMaxUser, onAppClose } from './utils/maxBridge.ts';
+import { notifyAppClose } from '../api-caller/on-app-close.ts';
 
 const spinnerWrapperStyle: CSSProperties = {
   flex: 1,
@@ -88,6 +89,27 @@ export default function App() {
       setProfileView('overview');
     }
   }, [activeTab]);
+
+  // Обработка закрытия мини-приложения
+  useEffect(() => {
+    const maxUser = getMaxUser();
+    if (!maxUser?.id) {
+      console.warn('⚠️ Cannot set up app close handler: user ID not available');
+      return;
+    }
+
+    console.log(`🔔 Setting up app close handler for user ${maxUser.id}`);
+
+    const unsubscribe = onAppClose(() => {
+      console.log(`📱 App is closing, notifying server for user ${maxUser.id}`);
+      notifyAppClose(maxUser.id);
+    });
+
+    return () => {
+      console.log(`🔕 Cleaning up app close handler for user ${maxUser.id}`);
+      unsubscribe();
+    };
+  }, []);
 
   useLayoutEffect(() => {
     scrollContainerRef.current?.scrollTo({ top: 0 });

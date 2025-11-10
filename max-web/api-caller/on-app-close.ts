@@ -1,0 +1,45 @@
+const API = (import.meta as any).env?.VITE_API_URL || 'http://127.0.0.1:8788';
+
+type OnAppCloseResponse =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/**
+ * Отправляет событие закрытия мини-приложения на сервер.
+ * 
+ * @param userId - ID пользователя MAX, который закрыл мини-приложение
+ * 
+ * Успех: возвращает { ok: true }.
+ * Ошибка HTTP или ответа `ok: false` — выбрасывает исключение с текстом ошибки.
+ */
+export async function notifyAppClose(userId: number): Promise<void> {
+  console.log(`📱 Notifying server about app close for user ${userId}`);
+
+  try {
+    const response = await fetch(`${API}/on-app-close`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to notify app close: ${response.status} ${errorText}`);
+    }
+
+    const payload = (await response.json()) as OnAppCloseResponse;
+    if (!payload.ok) {
+      throw new Error(payload.error || 'Failed to notify app close');
+    }
+
+    console.log(`✅ App close notification sent successfully for user ${userId}`);
+  } catch (error) {
+    console.error(`❌ Failed to notify app close for user ${userId}:`, error);
+    // Не пробрасываем ошибку, чтобы не нарушить процесс закрытия приложения
+  }
+}
+
