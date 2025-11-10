@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, type ChangeEvent, type CSSProperties } from 'react';
-import { Button, Input, Textarea, Typography } from '@maxhub/max-ui';
+import { Button, Textarea, Typography } from '@maxhub/max-ui';
 import { colors, layout } from './theme';
 import { createMaxCardFromUI } from '../../api-caller/create-max-card.ts';
 import { getMaxUser } from '../utils/maxBridge.ts';
@@ -110,6 +110,7 @@ const fieldGroupStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 12,
+  width: '100%',
 };
 
 const labelStyle: CSSProperties = {
@@ -119,30 +120,60 @@ const labelStyle: CSSProperties = {
   letterSpacing: 0.8,
 };
 
+const inputFocusStyle: CSSProperties = {
+  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+};
+
 const inputStyle: CSSProperties = {
   width: '100%',
   maxWidth: '100%',
-  borderRadius: 18,
-  border: '1px solid rgba(43, 71, 255, 0.25)',
-  backgroundColor: 'rgba(43, 71, 255, 0.12)',
+  borderRadius: 12,
+  border: 'none',
+  backgroundColor: 'rgba(255, 255, 255, 0.06)',
   color: colors.textPrimary,
-  padding: '14px 18px',
+  padding: '12px 16px',
   fontSize: 16,
+  lineHeight: 1.5,
+  height: '48px',
+  resize: 'none',
+  overflow: 'hidden',
   boxSizing: 'border-box',
-  boxShadow: 'inset 0 1px 2px rgba(43, 71, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.2)',
+  outline: 'none',
+  fontFamily: 'inherit',
+  transition: 'background-color 0.2s ease',
+  display: 'block',
+  margin: 0,
 };
 
 const textareaStyle: CSSProperties = {
-  ...inputStyle,
+  width: '100%',
+  maxWidth: '100%',
+  borderRadius: 12,
+  border: 'none',
+  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  color: colors.textPrimary,
+  padding: '12px 16px',
+  fontSize: 16,
+  lineHeight: 1.5,
   minHeight: 112,
   resize: 'vertical',
-  border: '1px solid rgba(43, 71, 255, 0.25)',
-  backgroundColor: 'rgba(43, 71, 255, 0.12)',
-  boxShadow: 'inset 0 1px 2px rgba(43, 71, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.2)',
+  boxSizing: 'border-box',
+  outline: 'none',
+  fontFamily: 'inherit',
+  transition: 'background-color 0.2s ease',
+  display: 'block',
+  margin: 0,
 };
 
 const actionAreaStyle: CSSProperties = {
   paddingTop: 12,
+};
+
+const charCounterStyle: CSSProperties = {
+  color: colors.textSecondary,
+  fontSize: 12,
+  textAlign: 'right',
+  marginTop: 4,
 };
 
 const categoryOptions: CategoryOption[] = [
@@ -164,6 +195,7 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showModerationAlert, setShowModerationAlert] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const isFormValid =
     title.trim().length > 0 &&
     shortDescription.trim().length > 0 &&
@@ -179,6 +211,34 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
       }
       return file ? URL.createObjectURL(file) : null;
     });
+  };
+
+  const handleTitleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value;
+    if (value.length <= 100) {
+      setTitle(value);
+    }
+  };
+
+  const handleShortDescriptionChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value;
+    if (value.length <= 200) {
+      setShortDescription(value);
+    }
+  };
+
+  const handleDescriptionChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value;
+    if (value.length <= 1000) {
+      setDescription(value);
+    }
+  };
+
+  const handleLinkChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const value = event.target.value;
+    if (value.length <= 500) {
+      setLink(value);
+    }
   };
 
   const handleSubmit = async () => {
@@ -329,46 +389,91 @@ export function CreateInitiativeScreen({ onBack }: CreateInitiativeScreenProps) 
 
       <div style={fieldGroupStyle}>
         <Typography.Label style={labelStyle}>Название</Typography.Label>
-        <Input
-          mode="secondary"
-          placeholder="Название инициативы"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          style={inputStyle}
-        />
+        <div style={{ width: '100%' }}>
+          <Textarea
+            mode="secondary"
+            placeholder="Название инициативы"
+            value={title}
+            onChange={handleTitleChange}
+            onFocus={() => setFocusedField('title')}
+            onBlur={() => setFocusedField(null)}
+            maxLength={100}
+            style={{
+              ...inputStyle,
+              ...(focusedField === 'title' ? inputFocusStyle : {}),
+            }}
+          />
+        </div>
+        <Typography.Label style={charCounterStyle}>
+          {title.length}/100
+        </Typography.Label>
       </div>
 
       <div style={fieldGroupStyle}>
         <Typography.Label style={labelStyle}>Краткое описание</Typography.Label>
-        <Textarea
-          mode="secondary"
-          placeholder="Расскажите кратко о мероприятии"
-          value={shortDescription}
-          onChange={(event) => setShortDescription(event.target.value)}
-          style={textareaStyle}
-        />
+        <div style={{ width: '100%' }}>
+          <Textarea
+            mode="secondary"
+            placeholder="Расскажите кратко о мероприятии"
+            value={shortDescription}
+            onChange={handleShortDescriptionChange}
+            onFocus={() => setFocusedField('shortDescription')}
+            onBlur={() => setFocusedField(null)}
+            maxLength={200}
+            style={{
+              ...textareaStyle,
+              ...(focusedField === 'shortDescription' ? inputFocusStyle : {}),
+            }}
+          />
+        </div>
+        <Typography.Label style={charCounterStyle}>
+          {shortDescription.length}/200
+        </Typography.Label>
       </div>
 
       <div style={fieldGroupStyle}>
         <Typography.Label style={labelStyle}>Описание</Typography.Label>
-        <Textarea
-          mode="secondary"
-          placeholder="Расскажите о мероприятии"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          style={{ ...textareaStyle, minHeight: 140 }}
-        />
+        <div style={{ width: '100%' }}>
+          <Textarea
+            mode="secondary"
+            placeholder="Расскажите о мероприятии"
+            value={description}
+            onChange={handleDescriptionChange}
+            onFocus={() => setFocusedField('description')}
+            onBlur={() => setFocusedField(null)}
+            maxLength={1000}
+            style={{
+              ...textareaStyle,
+              minHeight: 140,
+              ...(focusedField === 'description' ? inputFocusStyle : {}),
+            }}
+          />
+        </div>
+        <Typography.Label style={charCounterStyle}>
+          {description.length}/1000
+        </Typography.Label>
       </div>
 
       <div style={fieldGroupStyle}>
         <Typography.Label style={labelStyle}>Ссылка на мероприятие</Typography.Label>
-        <Input
-          mode="secondary"
-          placeholder="https://example.ru"
-          value={link}
-          onChange={(event) => setLink(event.target.value)}
-          style={inputStyle}
-        />
+        <div style={{ width: '100%' }}>
+          <Textarea
+            mode="secondary"
+            placeholder="https://example.ru"
+            value={link}
+            onChange={handleLinkChange}
+            onFocus={() => setFocusedField('link')}
+            onBlur={() => setFocusedField(null)}
+            maxLength={500}
+            style={{
+              ...inputStyle,
+              ...(focusedField === 'link' ? inputFocusStyle : {}),
+            }}
+          />
+        </div>
+        <Typography.Label style={charCounterStyle}>
+          {link.length}/500
+        </Typography.Label>
       </div>
 
       <div style={actionAreaStyle}>

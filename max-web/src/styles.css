@@ -24,3 +24,21 @@ body {
   height: 100%;
   min-height: 100dvh;
 }
+
+/* Переопределение стилей Input и Textarea из @maxhub/max-ui для полной ширины */
+input[type="text"],
+input[type="url"],
+textarea {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Переопределение для внутренних оберток компонентов @maxhub/max-ui */
+div[class*="Input"],
+div[class*="Textarea"],
+div[class*="input"],
+div[class*="textarea"] {
+  width: 100% !important;
+  max-width: 100% !important;
+}

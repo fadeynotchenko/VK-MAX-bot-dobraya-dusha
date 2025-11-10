@@ -4,10 +4,33 @@ import type { MaxCardCreatePayload, MaxCardInput } from '../shared/max-card.ts';
 
 const REQUIRED_FIELDS: Array<keyof MaxCardCreatePayload> = ['category', 'title', 'subtitle', 'text', 'status'];
 
+/**
+ * Проверяет, является ли значение строкой.
+ * Type guard для TypeScript.
+ * 
+ * @param value - значение для проверки
+ * @returns true, если значение является строкой
+ */
 function ensureString(value: unknown): value is string {
   return typeof value === 'string';
 }
 
+/**
+ * Обрабатывает POST /create-card.
+ * 
+ * Принимает multipart/form-data с полями:
+ * - category (обязательное): категория карточки
+ * - title (обязательное): заголовок карточки
+ * - subtitle (обязательное): краткое описание
+ * - text (обязательное): полное описание
+ * - status (обязательное): статус карточки (moderate, accepted, rejected)
+ * - link (опциональное): ссылка на мероприятие
+ * - user_id (опциональное): ID пользователя MAX
+ * - image (опциональное): файл изображения (PNG, JPG до 5MB)
+ * 
+ * Успех: отдаёт 201 с созданной карточкой.
+ * Ошибка: логирует причину и возвращает 400/500 с текстом ошибки.
+ */
 export async function handleCreateMaxCard(req: FastifyRequest, reply: FastifyReply) {
   try {
     const fields: Record<string, string> = {};

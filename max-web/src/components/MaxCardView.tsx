@@ -8,6 +8,7 @@ import { formatCardDate } from '../utils/formatDate.ts';
 type MaxCardViewProps = {
   card: MaxCard;
   onOpen: (card: MaxCard) => void;
+  isViewed?: boolean;
 };
 
 const buttonStyle: CSSProperties = {
@@ -67,7 +68,26 @@ const contentOverlayStyle: CSSProperties = {
   color: colors.textPrimary,
 };
 
-export function MaxCardView({ card, onOpen }: MaxCardViewProps) {
+const viewedBadgeStyle: CSSProperties = {
+  position: 'absolute',
+  top: 16,
+  right: 16,
+  zIndex: 2,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 999,
+  padding: '4px 10px',
+  fontSize: 11,
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+  whiteSpace: 'nowrap',
+  backgroundColor: 'rgba(76, 175, 80, 0.9)',
+  color: '#ffffff',
+};
+
+export function MaxCardView({ card, onOpen, isViewed }: MaxCardViewProps) {
   const formattedDate = formatCardDate(card.date);
 
   return (
@@ -79,6 +99,11 @@ export function MaxCardView({ card, onOpen }: MaxCardViewProps) {
           <div style={mediaStyle} />
         )}
         <div style={gradientOverlayStyle} />
+        {isViewed && (
+          <div style={viewedBadgeStyle}>
+            Просмотрено
+          </div>
+        )}
         <div style={contentOverlayStyle}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {card.category && (

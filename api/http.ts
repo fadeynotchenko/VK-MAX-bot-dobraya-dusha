@@ -4,6 +4,8 @@ import multipart from "@fastify/multipart";
 import { handleGetMaxCards } from "./endpoints/get-max-cards.ts";
 import { handleCreateMaxCard } from "./endpoints/create-max-card.ts";
 import { handleGetUserCards } from "./endpoints/get-user-cards.ts";
+import { handleTrackCardView } from "./endpoints/track-card-view.ts";
+import { handleGetViewedCards } from "./endpoints/get-viewed-cards.ts";
 import { connectDB } from "../db/db-client.ts";
 
 const LISTEN_URL = process.env.API_LISTEN_URL ?? "http://127.0.0.1:8788";
@@ -32,7 +34,9 @@ async function startServer() {
 
     app.get("/fetch-cards", handleGetMaxCards);
     app.get("/user-cards", handleGetUserCards);
+    app.get("/viewed-cards", handleGetViewedCards);
     app.post("/create-card", handleCreateMaxCard);
+    app.post("/track-card-view", handleTrackCardView);
 
     const address = await app.listen({ host, port });
     console.log(`✅ API успешно запущен: ${address}`);

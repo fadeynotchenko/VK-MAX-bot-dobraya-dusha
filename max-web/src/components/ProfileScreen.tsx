@@ -301,7 +301,7 @@ export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
             </Typography.Body>
           </div>
         ) : (
-          <div style={cardsListStyle}>
+          <div style={{ ...cardsListStyle, paddingTop: 8 }}>
             {cards.map((card) => (
               <UserCardView key={card.id} card={card} onOpen={setSelectedCard} />
             ))}

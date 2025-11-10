@@ -6,6 +6,7 @@ import { MaxCardView } from './MaxCardView';
 type MaxCardListProps = {
   cards: MaxCard[];
   onSelect: (card: MaxCard) => void;
+  viewedCardIds: Set<string>;
 };
 
 const listStyle: CSSProperties = {
@@ -16,11 +17,16 @@ const listStyle: CSSProperties = {
   gap: 24,
 };
 
-export function MaxCardList({ cards, onSelect }: MaxCardListProps) {
+export function MaxCardList({ cards, onSelect, viewedCardIds }: MaxCardListProps) {
   return (
     <div style={listStyle}>
       {cards.map((card) => (
-        <MaxCardView key={card.id} card={card} onOpen={onSelect} />
+        <MaxCardView 
+          key={card.id} 
+          card={card} 
+          onOpen={onSelect}
+          isViewed={viewedCardIds.has(card.id)}
+        />
       ))}
     </div>
   );

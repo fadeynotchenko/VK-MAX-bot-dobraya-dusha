@@ -16,7 +16,7 @@ export async function upsertUser(user_id: number, name: string) {
     {
       $setOnInsert: {
         name: name,
-        addedAt: new Date()
+        addedAt: new Date(),
       }
     },
     { upsert: true }

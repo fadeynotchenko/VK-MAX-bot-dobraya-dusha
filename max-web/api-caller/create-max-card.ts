@@ -11,6 +11,24 @@ export type CreateMaxCardPayload = Omit<MaxCardCreatePayload, 'image' | 'user_id
   user_id?: number;
 };
 
+/**
+ * Создаёт новую карточку инициативы через публичный API бота.
+ * 
+ * @param payload - данные карточки для создания:
+ *   - category: категория карточки (обязательное)
+ *   - title: заголовок карточки (обязательное)
+ *   - subtitle: краткое описание (обязательное)
+ *   - text: полное описание (обязательное)
+ *   - status: статус карточки (обязательное)
+ *   - link: ссылка на мероприятие (опциональное)
+ *   - user_id: ID пользователя MAX (опциональное)
+ *   - image: файл изображения (опциональное, PNG/JPG до 5MB)
+ * 
+ * @returns Созданная карточка с присвоенным ID и датой создания
+ * 
+ * Успех: возвращает объект MaxCard.
+ * Ошибка HTTP или ответа `ok: false` — выбрасывает исключение с текстом ошибки.
+ */
 export async function createMaxCardFromUI(payload: CreateMaxCardPayload): Promise<MaxCard> {
   const formData = new FormData();
   
