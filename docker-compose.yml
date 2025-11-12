@@ -8,3 +8,6 @@ services:
       - "8788:8788"
       - "4173:4173"
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4

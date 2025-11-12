@@ -22,6 +22,25 @@ function formatViewCount(count: number): string {
 }
 
 /**
+ * Форматирует текущую дату на русском языке.
+ * 
+ * @returns Отформатированная дата в формате "15 января 2024"
+ */
+function formatCurrentDate(): string {
+  const now = new Date();
+  const months = [
+    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+  ];
+  
+  const day = now.getDate();
+  const month = months[now.getMonth()];
+  const year = now.getFullYear();
+  
+  return `${day} ${month} ${year}`;
+}
+
+/**
  * Генерирует мотивационное сообщение со статистикой просмотров.
  * 
  * @param viewsThisSession - количество просмотров за текущую сессию
@@ -32,12 +51,13 @@ function generateMotivationalMessage(viewsThisSession: number, totalViews: numbe
   const viewsThisSessionText = formatViewCount(viewsThisSession);
   const totalViewsText = formatViewCount(totalViews);
   const motivation = getRandomMotivation();
+  const currentDate = formatCurrentDate();
   
   if (viewsThisSession === 0) {
-    return `📊 Статистика:\nЗа эту сессию: 0 просмотров\nВсего просмотрено: ${totalViewsText}\n\n${motivation}`;
+    return `📊 Статистика за ${currentDate}:\nЗа эту сессию: 0 просмотров\nВсего просмотрено: ${totalViewsText}\n\n${motivation}`;
   }
   
-  return `📊 Статистика:\nЗа эту сессию: ${viewsThisSessionText}\nВсего просмотрено: ${totalViewsText}\n\n${motivation}`;
+  return `📊 Статистика за ${currentDate}:\nЗа эту сессию: ${viewsThisSessionText}\nВсего просмотрено: ${totalViewsText}\n\n${motivation}`;
 }
 
 /**

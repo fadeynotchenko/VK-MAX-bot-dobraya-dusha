@@ -64,6 +64,24 @@ const statusBadgeContainerStyle: CSSProperties = {
   zIndex: 2,
 };
 
+const viewCountStyle: CSSProperties = {
+  position: 'absolute',
+  top: 16,
+  left: 16,
+  zIndex: 2,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 4,
+  borderRadius: 999,
+  padding: '6px 12px',
+  fontSize: 13,
+  fontWeight: 600,
+  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  color: '#ffffff',
+  backdropFilter: 'blur(8px)',
+};
+
 const contentOverlayStyle: CSSProperties = {
   position: 'absolute',
   bottom: 0,
@@ -77,6 +95,8 @@ const contentOverlayStyle: CSSProperties = {
 
 export function UserCardView({ card, onOpen }: UserCardViewProps) {
   const formattedDate = formatCardDate(card.date);
+  const viewCount = card.view_count ?? 0;
+  const isAccepted = card.status === 'accepted';
 
   return (
     <button type="button" onClick={() => onOpen(card)} style={buttonStyle}>
@@ -87,6 +107,12 @@ export function UserCardView({ card, onOpen }: UserCardViewProps) {
           <div style={mediaStyle} />
         )}
         <div style={gradientOverlayStyle} />
+        {isAccepted && viewCount > 0 && (
+          <div style={viewCountStyle}>
+            <span>👁</span>
+            <span>{viewCount}</span>
+          </div>
+        )}
         <div style={statusBadgeContainerStyle}>
           <StatusBadge status={card.status} />
         </div>
