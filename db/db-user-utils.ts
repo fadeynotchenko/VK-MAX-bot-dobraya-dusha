@@ -83,8 +83,30 @@ export async function saveLastMotivationalMessageId(user_id: number, messageId: 
     {
       $set: {
         lastMotivationalMessageId: messageId,
+        lastMotivationalMessageDate: new Date(),
       }
     },
     { upsert: true }
   );
+}
+
+/**
+ * Получает дату последнего отправленного мотивационного сообщения для пользователя.
+ * 
+ * @param user_id - идентификатор пользователя
+ * @returns Дата последнего сообщения или null, если сообщение не было отправлено
+ */
+export async function getLastMotivationalMessageDate(user_id: number): Promise<Date | null> {
+  const user = await db.collection('max_users').findOne(
+    { user_id: user_id },
+    { projection: { lastMotivationalMessageDate: 1 } }
+  );
+  
+  if (user?.lastMotivationalMessageDate) {
+    return user.lastMotivationalMessageDate instanceof Date 
+      ? user.lastMotivationalMessageDate 
+      : new Date(user.lastMotivationalMessageDate);
+  }
+  
+  return null;
 }
