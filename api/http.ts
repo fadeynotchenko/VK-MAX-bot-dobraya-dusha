@@ -31,6 +31,7 @@ async function startServer() {
     await app.register(cors, {
       origin: true,
       credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     });
 
     await app.register(multipart, {

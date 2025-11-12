@@ -22,7 +22,8 @@ const overlayStyle: CSSProperties = {
 };
 
 const modalStyle: CSSProperties = {
-  backgroundColor: colors.cardGradient,
+  background: colors.cardGradient,
+  backgroundColor: '#141f36',
   borderRadius: layout.cornerRadius,
   padding: '24px',
   maxWidth: 400,

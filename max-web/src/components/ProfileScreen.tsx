@@ -326,9 +326,28 @@ export function ProfileScreen({ onCreateInitiative, onEditInitiative, scrollCont
     if (onEditInitiative) {
       onEditInitiative(card);
     } else {
+      // Сохраняем позицию скролла перед открытием редактирования
+      if (scrollContainerRef?.current) {
+        savedScrollPositionRef.current = scrollContainerRef.current.scrollTop;
+        shouldRestoreScrollRef.current = true;
+      }
       setEditingCard(card);
     }
   };
+
+  // Скролл вверх при открытии редактирования
+  useLayoutEffect(() => {
+    if (editingCard && scrollContainerRef?.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' });
+    } else if (!editingCard && shouldRestoreScrollRef.current && scrollContainerRef?.current) {
+      // Восстанавливаем скролл при закрытии редактирования
+      scrollContainerRef.current.scrollTo({ 
+        top: savedScrollPositionRef.current, 
+        behavior: 'instant' 
+      });
+      shouldRestoreScrollRef.current = false;
+    }
+  }, [editingCard]);
 
   if (editingCard) {
     return (

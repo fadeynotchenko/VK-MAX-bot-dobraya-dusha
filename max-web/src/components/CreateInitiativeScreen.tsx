@@ -197,6 +197,25 @@ export function CreateInitiativeScreen({ onBack, cardToEdit, onSuccess }: Create
   const uploadInputId = useId();
   const isEditMode = !!cardToEdit;
   
+  // Скролл вверх при открытии экрана редактирования
+  useEffect(() => {
+    // Прокручиваем window и все возможные контейнеры скролла
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    // Ищем родительский контейнер скролла
+    const findScrollContainer = (element: HTMLElement | null): HTMLElement | null => {
+      if (!element) return null;
+      const style = window.getComputedStyle(element);
+      if (style.overflowY === 'auto' || style.overflowY === 'scroll' || style.overflow === 'auto' || style.overflow === 'scroll') {
+        return element;
+      }
+      return findScrollContainer(element.parentElement);
+    };
+    const container = findScrollContainer(document.body);
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, []);
+  
   // Находим категорию из существующих опций или используем значение из карточки
   const getCategoryValue = (categoryLabel?: string): string => {
     if (!categoryLabel) return categoryOptions[0]?.value ?? '';
