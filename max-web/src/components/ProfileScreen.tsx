@@ -6,6 +6,7 @@ import type { MaxCard } from '../../api-caller/get-user-cards.ts';
 import { userCardsCache } from '../utils/userCardsCache.ts';
 import { UserCardView } from './UserCardView';
 import { MaxCardDetail } from './MaxCardDetail';
+import { CategoryFilter, type CategoryFilterOption } from './CategoryFilter';
 
 type ErrorScreenProps = {
   error: string;
@@ -193,12 +194,20 @@ const statDividerStyle: CSSProperties = {
   flexShrink: 0,
 };
 
+const STATUS_FILTERS: CategoryFilterOption[] = [
+  { label: 'Все', value: 'all' },
+  { label: 'Опубликовано', value: 'accepted' },
+  { label: 'На модерации', value: 'moderate' },
+  { label: 'Отклонено', value: 'rejected' },
+];
+
 export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
   const [user, setUser] = useState<MaxUser | null>(null);
   const [cards, setCards] = useState<MaxCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<MaxCard | null>(null);
+  const [activeStatusFilter, setActiveStatusFilter] = useState<CategoryFilterOption['value']>('all');
 
   useEffect(() => {
     const loadUser = () => {
@@ -261,6 +270,10 @@ export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
   const fullName = getUserFullName(user);
   const initials = getUserInitials(user);
   const hasPhoto = user?.photoUrl;
+
+  const filteredCards = activeStatusFilter === 'all'
+    ? cards
+    : cards.filter((card) => card.status?.toLowerCase() === activeStatusFilter.toLowerCase());
 
   if (selectedCard) {
     return (
@@ -376,11 +389,26 @@ export function ProfileScreen({ onCreateInitiative }: ProfileScreenProps) {
             </Typography.Body>
           </div>
         ) : (
-          <div style={{ ...cardsListStyle, paddingTop: 8 }}>
-            {cards.map((card) => (
-              <UserCardView key={card.id} card={card} onOpen={setSelectedCard} />
-            ))}
-          </div>
+          <>
+            <CategoryFilter
+              options={STATUS_FILTERS}
+              activeValue={activeStatusFilter}
+              onChange={(value) => setActiveStatusFilter(value)}
+            />
+            {filteredCards.length > 0 ? (
+              <div style={{ ...cardsListStyle, paddingTop: 8 }}>
+                {filteredCards.map((card) => (
+                  <UserCardView key={card.id} card={card} onOpen={setSelectedCard} />
+                ))}
+              </div>
+            ) : (
+              <div style={emptyStateStyle}>
+                <Typography.Body style={{ color: colors.textSecondary }}>
+                  Нет инициатив с выбранным статусом
+                </Typography.Body>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

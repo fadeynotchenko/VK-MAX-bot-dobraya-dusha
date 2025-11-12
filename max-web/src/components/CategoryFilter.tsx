@@ -35,10 +35,6 @@ const buttonStyle: CSSProperties = {
 };
 
 export function CategoryFilter({ options, activeValue, onChange }: CategoryFilterProps) {
-  const handleVkDobroClick = () => {
-    window.open('https://dobro.vk.com/sos', '_blank', 'noopener,noreferrer');
-  };
-
   return (
     <div style={containerStyle}>
       {options.map((option) => {
@@ -61,23 +57,6 @@ export function CategoryFilter({ options, activeValue, onChange }: CategoryFilte
           </button>
         );
       })}
-      <button
-        type="button"
-        onClick={handleVkDobroClick}
-        style={{
-          ...buttonStyle,
-          background: colors.filterVkDobroBackground,
-          borderColor: colors.filterVkDobroBorder,
-          color: colors.filterVkDobroText,
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          fontWeight: 700,
-        }}
-      >
-        <span style={{ fontSize: 16 }}>❤</span>
-        ВК Добро
-      </button>
     </div>
   );
 }

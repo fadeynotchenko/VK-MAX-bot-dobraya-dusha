@@ -10,6 +10,7 @@ import { BottomTabs, type BottomTabKey } from './components/BottomTabs';
 import { ProfileScreen } from './components/ProfileScreen';
 import { CreateInitiativeScreen } from './components/CreateInitiativeScreen';
 import { SearchBar } from './components/SearchBar';
+import { VkDobroSection } from './components/VkDobroSection';
 import { colors, layout } from './components/theme';
 import { trackCardViewFromUI } from '../api-caller/track-card-view.ts';
 import { fetchViewedCardsFromUI } from '../api-caller/get-viewed-cards.ts';
@@ -283,11 +284,14 @@ export default function App() {
                 onChange={(value) => setActiveFilter(value)}
               />
               {hasFilteredCards ? (
-                <MaxCardList 
-                  cards={filteredCards} 
-                  onSelect={setSelectedCard}
-                  viewedCardIds={viewedCardIds}
-                />
+                <>
+                  <VkDobroSection />
+                  <MaxCardList 
+                    cards={filteredCards} 
+                    onSelect={setSelectedCard}
+                    viewedCardIds={viewedCardIds}
+                  />
+                </>
               ) : (
                 <Typography.Body
                   style={{
