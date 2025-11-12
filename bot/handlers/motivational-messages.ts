@@ -112,7 +112,7 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
     if (lastMessageId) {
       try {
         const lastMessage = await bot.api.getMessage(lastMessageId);
-        const lastMessageText = lastMessage.body.text;
+        const lastMessageText = lastMessage.body?.text || null;
         
         // Проверяем, является ли сообщение статистическим
         if (isStatisticsMessage(lastMessageText)) {
@@ -122,6 +122,7 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
           if (lastMessageDate === currentDate) {
             await bot.api.editMessage(lastMessageId, { text: message });
             await saveLastViewCount(userId, totalViewCount);
+            console.log(`✅ Статистика отредактирована для пользователя ${userId}`);
             return;
           }
         }
@@ -129,23 +130,24 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
         // Если сообщение не статистическое или за другой день, отправляем новое
         const newMessage = await bot.api.sendMessageToUser(userId, message);
         await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+        await saveLastViewCount(userId, totalViewCount);
+        console.log(`✅ Новая статистика отправлена пользователю ${userId}`);
       } catch (getError: any) {
-        // Если сообщение не найдено, отправляем новое
-        if (getError?.message?.includes('not found') || getError?.message?.includes('not exist')) {
-          const newMessage = await bot.api.sendMessageToUser(userId, message);
-          await saveLastMotivationalMessageId(userId, newMessage.body.mid);
-        } else {
-          throw getError;
-        }
+        // Если сообщение не найдено или любая другая ошибка, отправляем новое
+        const newMessage = await bot.api.sendMessageToUser(userId, message);
+        await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+        await saveLastViewCount(userId, totalViewCount);
+        console.log(`✅ Новая статистика отправлена пользователю ${userId}`);
       }
     } else {
       // Если ID сообщения нет, отправляем новое
       const newMessage = await bot.api.sendMessageToUser(userId, message);
       await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+      await saveLastViewCount(userId, totalViewCount);
+      console.log(`✅ Новая статистика отправлена пользователю ${userId}`);
     }
-    
-    await saveLastViewCount(userId, totalViewCount);
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`❌ Ошибка при отправке статистики пользователю ${userId}:`, error?.message || error);
     throw error;
   }
 }
