@@ -68,14 +68,27 @@ function generateMotivationalMessage(viewsThisSession: number, totalViews: numbe
  */
 function isStatisticsMessage(messageText: string | null): boolean {
   if (!messageText) return false;
-  return messageText.includes('📊 Статистика:');
+  return messageText.includes('📊 Статистика');
+}
+
+/**
+ * Извлекает дату из текста статистического сообщения.
+ * 
+ * @param messageText - текст сообщения
+ * @returns Дата в формате "15 января 2024" или null, если дата не найдена
+ */
+function extractDateFromMessage(messageText: string | null): string | null {
+  if (!messageText) return null;
+  
+  const match = messageText.match(/📊 Статистика за (.+?):/);
+  return match ? match[1]! : null;
 }
 
 /**
  * Проверяет и отправляет/редактирует мотивационное сообщение пользователю при закрытии мини-приложения.
  * 
- * Если у пользователя уже есть статистическое сообщение, редактирует его.
- * Если последнее сообщение не является статистическим или его нет, отправляет новое.
+ * Если у пользователя уже есть статистическое сообщение за сегодняшний день, редактирует его.
+ * Если последнее сообщение не является статистическим, за другой день или его нет, отправляет новое.
  * 
  * Отправляет сообщение со статистикой: сколько просмотрено за эту сессию и всего.
  * Включает случайную мотивацию из 3-4 вариантов.
@@ -92,18 +105,32 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
     ]);
 
     const viewsThisSession = Math.max(0, totalViewCount - lastViewCount);
+    const currentDate = formatCurrentDate();
     const message = generateMotivationalMessage(viewsThisSession, totalViewCount);
     
+    // Пытаемся получить и проверить последнее сообщение
     if (lastMessageId) {
       try {
         const lastMessage = await bot.api.getMessage(lastMessageId);
-        if (isStatisticsMessage(lastMessage.body.text)) {
-          await bot.api.editMessage(lastMessageId, { text: message });
-        } else {
-          const newMessage = await bot.api.sendMessageToUser(userId, message);
-          await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+        const lastMessageText = lastMessage.body.text;
+        
+        // Проверяем, является ли сообщение статистическим
+        if (isStatisticsMessage(lastMessageText)) {
+          const lastMessageDate = extractDateFromMessage(lastMessageText);
+          
+          // Если дата совпадает с текущей, редактируем сообщение
+          if (lastMessageDate === currentDate) {
+            await bot.api.editMessage(lastMessageId, { text: message });
+            await saveLastViewCount(userId, totalViewCount);
+            return;
+          }
         }
+        
+        // Если сообщение не статистическое или за другой день, отправляем новое
+        const newMessage = await bot.api.sendMessageToUser(userId, message);
+        await saveLastMotivationalMessageId(userId, newMessage.body.mid);
       } catch (getError: any) {
+        // Если сообщение не найдено, отправляем новое
         if (getError?.message?.includes('not found') || getError?.message?.includes('not exist')) {
           const newMessage = await bot.api.sendMessageToUser(userId, message);
           await saveLastMotivationalMessageId(userId, newMessage.body.mid);
@@ -112,6 +139,7 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
         }
       }
     } else {
+      // Если ID сообщения нет, отправляем новое
       const newMessage = await bot.api.sendMessageToUser(userId, message);
       await saveLastMotivationalMessageId(userId, newMessage.body.mid);
     }

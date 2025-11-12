@@ -27,8 +27,8 @@ async function startBotWithRetry(maxRetries = 5, initialDelay = 2000) {
       const errorCode = error?.cause?.code || error?.code || 'UNKNOWN';
       
       console.error(`❌ Ошибка при запуске бота (попытка ${attempt}/${maxRetries}):`);
-      console.error(`   Код: ${errorCode}`);
-      console.error(`   Сообщение: ${errorMessage}`);
+      console.error(`Код: ${errorCode}`);
+      console.error(`Сообщение: ${errorMessage}`);
       
       if (attempt === maxRetries) {
         console.error('❌ Не удалось запустить бот после всех попыток');
@@ -38,7 +38,6 @@ async function startBotWithRetry(maxRetries = 5, initialDelay = 2000) {
       console.log(`⏳ Повторная попытка через ${delay / 1000} секунд...`);
       await new Promise(resolve => setTimeout(resolve, delay));
       
-      // Экспоненциальная задержка с максимумом 30 секунд
       delay = Math.min(delay * 1.5, 30000);
     }
   }

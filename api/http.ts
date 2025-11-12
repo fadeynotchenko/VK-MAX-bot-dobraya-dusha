@@ -12,7 +12,10 @@ import { connectDB } from "../db/db-client.ts";
 const LISTEN_URL = process.env.API_LISTEN_URL ?? "http://127.0.0.1:8788";
 const u = new URL(LISTEN_URL);
 const host = u.hostname;
-const port = Number(u.port)
+const port = u.port ? Number(u.port) : 8788;
+
+console.log(`🔧 API_LISTEN_URL: ${LISTEN_URL}`);
+console.log(`🔧 Parsed host: ${host}, port: ${port}`);
 
 const app = Fastify({
   logger: true,
@@ -42,8 +45,13 @@ async function startServer() {
 
     const address = await app.listen({ host, port });
     console.log(`✅ API успешно запущен: ${address}`);
+    console.log(`✅ API доступен по адресу: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
   } catch (error) {
     console.error("❌ Не удалось запустить API:", error);
+    if (error instanceof Error) {
+      console.error("❌ Ошибка:", error.message);
+      console.error("❌ Stack:", error.stack);
+    }
     process.exit(1);
   }
 }
