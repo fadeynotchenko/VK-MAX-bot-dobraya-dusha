@@ -62,13 +62,21 @@ function generateMotivationalMessage(viewsThisSession: number, totalViews: numbe
 
 /**
  * Проверяет, является ли сообщение статистическим.
+ * Проверяет наличие всех ключевых элементов статистического сообщения.
  * 
  * @param messageText - текст сообщения
  * @returns true, если сообщение содержит статистику
  */
 function isStatisticsMessage(messageText: string | null): boolean {
   if (!messageText) return false;
-  return messageText.includes('📊 Статистика');
+  
+  // Проверяем наличие всех ключевых элементов статистического сообщения
+  const hasStatisticsEmoji = messageText.includes('📊 Статистика');
+  const hasSessionInfo = messageText.includes('За эту сессию') || messageText.includes('сессию');
+  const hasTotalInfo = messageText.includes('Всего просмотрено');
+  
+  // Сообщение статистическое только если содержит все элементы
+  return hasStatisticsEmoji && hasSessionInfo && hasTotalInfo;
 }
 
 /**
@@ -118,12 +126,23 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
         if (isStatisticsMessage(lastMessageText)) {
           const lastMessageDate = extractDateFromMessage(lastMessageText);
           
-          // Если дата совпадает с текущей, редактируем сообщение
-          if (lastMessageDate === currentDate) {
-            await bot.api.editMessage(lastMessageId, { text: message });
-            await saveLastViewCount(userId, totalViewCount);
-            console.log(`✅ Статистика отредактирована для пользователя ${userId}`);
-            return;
+          // Если дата совпадает с текущей И сообщение действительно статистическое, редактируем
+          if (lastMessageDate && lastMessageDate === currentDate) {
+            // Дополнительная проверка: убеждаемся, что можем редактировать сообщение
+            try {
+              await bot.api.editMessage(lastMessageId, { text: message });
+              await saveLastViewCount(userId, totalViewCount);
+              console.log(`✅ Статистика отредактирована для пользователя ${userId}`);
+              return;
+            } catch (editError: any) {
+              // Если редактирование не удалось (сообщение удалено, недоступно и т.д.), отправляем новое
+              console.log(`⚠️ Не удалось отредактировать сообщение ${lastMessageId}, отправляем новое`);
+              const newMessage = await bot.api.sendMessageToUser(userId, message);
+              await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+              await saveLastViewCount(userId, totalViewCount);
+              console.log(`✅ Новая статистика отправлена пользователю ${userId}`);
+              return;
+            }
           }
         }
         
@@ -133,7 +152,7 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
         await saveLastViewCount(userId, totalViewCount);
         console.log(`✅ Новая статистика отправлена пользователю ${userId}`);
       } catch (getError: any) {
-        // Если сообщение не найдено или любая другая ошибка, отправляем новое
+        // Если сообщение не найдено, удалено или недоступно, отправляем новое
         const newMessage = await bot.api.sendMessageToUser(userId, message);
         await saveLastMotivationalMessageId(userId, newMessage.body.mid);
         await saveLastViewCount(userId, totalViewCount);
