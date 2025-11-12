@@ -1,5 +1,5 @@
 import { type CSSProperties } from 'react';
-import { Typography, Button } from '@maxhub/max-ui';
+import { Typography } from '@maxhub/max-ui';
 import { colors, layout } from './theme';
 
 type DeleteConfirmModalProps = {

@@ -295,7 +295,7 @@ export function CreateInitiativeScreen({ onBack, cardToEdit, onSuccess }: Create
           ...(imageFile ? { image: imageFile } : {}),
         };
         
-        const updatedCard = await updateMaxCardFromUI(updatePayload);
+        await updateMaxCardFromUI(updatePayload);
 
         if (maxUser?.id) {
           await userCardsCache.invalidateUserCache(maxUser.id);

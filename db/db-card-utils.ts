@@ -1,4 +1,4 @@
-import type { ObjectId, OptionalUnlessRequiredId } from 'mongodb';
+import { ObjectId, type OptionalUnlessRequiredId } from 'mongodb';
 import { db } from './db-client.ts';
 import type { MaxCard, MaxCardInput } from '../api/shared/max-card.ts';
 
@@ -196,7 +196,6 @@ export async function createMaxCard(card: MaxCardInput): Promise<MaxCard> {
  */
 export async function updateMaxCard(cardId: string, updates: Partial<MaxCardInput>): Promise<MaxCard | null> {
   const cardsCollection = db.collection<MaxCardDocument>('max_cards');
-  const { ObjectId } = await import('mongodb');
   
   let objectId: ObjectId;
   try {
@@ -244,7 +243,7 @@ export async function updateMaxCard(cardId: string, updates: Partial<MaxCardInpu
     },
   ]).toArray();
 
-  const viewCount = viewStats.length > 0 ? viewStats[0].totalViews : 0;
+  const viewCount = viewStats.length > 0 && viewStats[0]?.totalViews ? viewStats[0].totalViews : 0;
 
   return {
     id: doc._id ? doc._id.toString() : '',
@@ -271,7 +270,6 @@ export async function updateMaxCard(cardId: string, updates: Partial<MaxCardInpu
  */
 export async function deleteMaxCard(cardId: string): Promise<boolean> {
   const cardsCollection = db.collection<MaxCardDocument>('max_cards');
-  const { ObjectId } = await import('mongodb');
   
   let objectId: ObjectId;
   try {

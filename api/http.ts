@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
+
 import { handleGetMaxCards } from "./endpoints/get-max-cards.ts";
 import { handleCreateMaxCard } from "./endpoints/create-max-card.ts";
 import { handleGetUserCards } from "./endpoints/get-user-cards.ts";
@@ -25,9 +26,7 @@ const app = Fastify({
 
 async function startServer() {
   try {
-    console.log('🔌 Подключение к базе данных...');
     await connectDB();
-    console.log('✅ База данных подключена');
 
     await app.register(cors, {
       origin: true,
@@ -40,7 +39,6 @@ async function startServer() {
       },
     });
 
-    console.log('📝 Регистрация маршрутов...');
     app.get("/fetch-cards", handleGetMaxCards);
     app.get("/user-cards", handleGetUserCards);
     app.get("/viewed-cards", handleGetViewedCards);
@@ -51,8 +49,8 @@ async function startServer() {
     app.post("/on-app-close", handleOnAppClose);
 
     console.log(`🚀 Запуск сервера на ${host}:${port}...`);
-    const address = await app.listen({ host, port });
-    console.log(`✅ API успешно запущен: ${address}`);
+    await app.listen({ host, port });
+    console.log(`✅ API успешно запущен: ${host}:${port}`);
   } catch (error) {
     console.error("❌ Не удалось запустить API:", error);
     if (error instanceof Error) {
