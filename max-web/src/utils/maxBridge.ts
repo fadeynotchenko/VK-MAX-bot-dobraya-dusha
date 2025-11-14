@@ -98,33 +98,56 @@ export function isMaxBridgeAvailable(): boolean {
 }
 
 /**
- * Подписывается на событие закрытия мини-приложения
+ * Подписывается на событие закрытия мини-приложения и синхронно отправляет уведомление на сервер
  */
-export function onAppClose(callback: () => void): () => void {
-  let lastCallTime = 0;
-  const CALL_THROTTLE_MS = 1000;
+export function onAppClose(userId: number, apiUrl: string): () => void {
   let isClosing = false;
   
-  const callOnce = () => {
+  const sendNotification = () => {
     if (isClosing) {
-      console.log('⚠️ App close callback already called, skipping duplicate call');
       return;
     }
-    
-    const now = Date.now();
-    if (now - lastCallTime < CALL_THROTTLE_MS) {
-      console.log(`⚠️ App close callback called too soon (${now - lastCallTime}ms ago), skipping duplicate call`);
-      return;
-    }
-    lastCallTime = now;
     isClosing = true;
-    console.log('📱 Calling app close callback');
+    
+    const url = `${apiUrl}/on-app-close`;
+    
+    if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+      const sendBeacon = navigator.sendBeacon as ((url: string, data: FormData | Blob) => boolean) | undefined;
+      
+      if (sendBeacon) {
+        try {
+          const formData = new FormData();
+          formData.append('user_id', userId.toString());
+          
+          if (sendBeacon(url, formData)) {
+            console.log(`✅ App close notification sent via sendBeacon for user ${userId}`);
+            return;
+          }
+        } catch (error) {
+          console.error(`❌ sendBeacon error for user ${userId}:`, error);
+        }
+
+        try {
+          const blob = new Blob([JSON.stringify({ user_id: userId })], { type: 'application/json' });
+          if (sendBeacon(url, blob)) {
+            console.log(`✅ App close notification sent via sendBeacon (Blob) for user ${userId}`);
+            return;
+          }
+        } catch (error) {
+          console.error(`❌ sendBeacon (Blob) error for user ${userId}:`, error);
+        }
+      }
+    }
+
     try {
-      callback();
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+        keepalive: true,
+      }).catch(() => {});
     } catch (error) {
-      console.error('❌ Error in app close callback:', error);
-      isClosing = false;
-      lastCallTime = 0;
+      console.error(`❌ Failed to notify app close for user ${userId}:`, error);
     }
   };
 
@@ -133,16 +156,14 @@ export function onAppClose(callback: () => void): () => void {
   if (window.WebApp?.onEvent) {
     const handleBackButton = () => {
       console.log('📱 App close event detected (backButtonClicked)');
-      callOnce();
+      sendNotification();
     };
 
     try {
       window.WebApp.onEvent('backButtonClicked', handleBackButton);
-      console.log('✅ Subscribed to backButtonClicked event (critical for mobile)');
       cleanupFunctions.push(() => {
         if (window.WebApp?.offEvent) {
           window.WebApp.offEvent('backButtonClicked', handleBackButton);
-          console.log('🔕 Unsubscribed from backButtonClicked event');
         }
       });
     } catch (error) {
@@ -150,35 +171,37 @@ export function onAppClose(callback: () => void): () => void {
     }
 
     const handleViewportChanged = (data: any) => {
-      console.log('🔔 viewportChanged event received:', data);
       if (data?.isStateVisible === false || data?.isExpanded === false) {
-        console.log('📱 App close event detected (viewportChanged with isStateVisible: false or isExpanded: false)');
-        callOnce();
+        console.log('📱 App close event detected (viewportChanged)');
+        sendNotification();
       }
     };
 
     try {
       window.WebApp.onEvent('viewportChanged', handleViewportChanged);
-      console.log('✅ Subscribed to viewportChanged event');
       cleanupFunctions.push(() => {
         if (window.WebApp?.offEvent) {
           window.WebApp.offEvent('viewportChanged', handleViewportChanged);
-          console.log('🔕 Unsubscribed from viewportChanged event');
         }
       });
     } catch (error) {
       console.error('❌ Failed to subscribe to viewportChanged event:', error);
     }
-  } else {
-    console.warn('⚠️ MAX Bridge onEvent is not available, using browser events only');
   }
+
+  const handleBlur = () => {
+    console.log('📱 App close event detected (blur)');
+    sendNotification();
+  };
+  window.addEventListener('blur', handleBlur, { capture: true });
+  cleanupFunctions.push(() => {
+    window.removeEventListener('blur', handleBlur, { capture: true });
+  });
 
   const handlePageHide = (event: PageTransitionEvent) => {
     if (!event.persisted) {
-      console.log('📱 App close event detected (pagehide, not persisted)');
-      callOnce();
-    } else {
-      console.log('📱 Page hidden but persisted (likely cached), not treating as close');
+      console.log('📱 App close event detected (pagehide)');
+      sendNotification();
     }
   };
   window.addEventListener('pagehide', handlePageHide, { capture: true });
@@ -188,8 +211,8 @@ export function onAppClose(callback: () => void): () => void {
 
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
-      console.log('📱 App close event detected (visibilitychange: hidden)');
-      callOnce();
+      console.log('📱 App close event detected (visibilitychange)');
+      sendNotification();
     }
   };
   document.addEventListener('visibilitychange', handleVisibilityChange, { capture: true });
@@ -197,9 +220,18 @@ export function onAppClose(callback: () => void): () => void {
     document.removeEventListener('visibilitychange', handleVisibilityChange, { capture: true });
   });
 
+  const handleUnload = () => {
+    console.log('📱 App close event detected (unload)');
+    sendNotification();
+  };
+  window.addEventListener('unload', handleUnload);
+  cleanupFunctions.push(() => {
+    window.removeEventListener('unload', handleUnload);
+  });
+
   const handleBeforeUnload = () => {
     console.log('📱 App close event detected (beforeunload)');
-    callOnce();
+    sendNotification();
   };
   window.addEventListener('beforeunload', handleBeforeUnload);
   cleanupFunctions.push(() => {
@@ -207,7 +239,6 @@ export function onAppClose(callback: () => void): () => void {
   });
 
   return () => {
-    console.log('🔕 Cleaning up app close handlers');
     cleanupFunctions.forEach(cleanup => cleanup());
   };
 }

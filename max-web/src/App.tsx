@@ -15,7 +15,6 @@ import { colors, layout } from './components/theme';
 import { trackCardViewFromUI } from '../api-caller/track-card-view.ts';
 import { fetchViewedCardsFromUI } from '../api-caller/get-viewed-cards.ts';
 import { getMaxUser, onAppClose } from './utils/maxBridge.ts';
-import { notifyAppClose } from '../api-caller/on-app-close.ts';
 
 const spinnerWrapperStyle: CSSProperties = {
   flex: 1,
@@ -105,15 +104,10 @@ export default function App() {
       return;
     }
 
-    console.log(`🔔 Setting up app close handler for user ${maxUser.id}`);
-
-    const unsubscribe = onAppClose(() => {
-      console.log(`📱 App is closing, notifying server for user ${maxUser.id}`);
-      notifyAppClose(maxUser.id);
-    });
+    const apiUrl = (import.meta as any).env?.VITE_API_URL || 'http://127.0.0.1:8788';
+    const unsubscribe = onAppClose(maxUser.id, apiUrl);
 
     return () => {
-      console.log(`🔕 Cleaning up app close handler for user ${maxUser.id}`);
       unsubscribe();
     };
   }, []);
