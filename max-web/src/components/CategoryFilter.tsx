@@ -1,5 +1,6 @@
 import { type CSSProperties } from 'react';
 import { colors, layout } from './theme';
+import { triggerSoftHapticFeedback } from '../utils/maxBridge';
 
 export type CategoryFilterOption = {
   label: string;
@@ -35,6 +36,13 @@ const buttonStyle: CSSProperties = {
 };
 
 export function CategoryFilter({ options, activeValue, onChange }: CategoryFilterProps) {
+  const handleFilterChange = (value: CategoryFilterOption['value']) => {
+    if (value !== activeValue) {
+      triggerSoftHapticFeedback();
+    }
+    onChange(value);
+  };
+
   return (
     <div style={containerStyle}>
       {options.map((option) => {
@@ -44,7 +52,7 @@ export function CategoryFilter({ options, activeValue, onChange }: CategoryFilte
           <button
             key={option.value}
             type="button"
-            onClick={() => onChange(option.value)}
+            onClick={() => handleFilterChange(option.value)}
             style={{
               ...buttonStyle,
               background: isActive ? colors.filterActiveBackground : buttonStyle.background,

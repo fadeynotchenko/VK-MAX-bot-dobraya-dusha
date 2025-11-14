@@ -3,7 +3,7 @@ import { Button, Textarea, Typography } from '@maxhub/max-ui';
 import { colors, layout } from './theme';
 import { createMaxCardFromUI } from '../../api-caller/create-max-card.ts';
 import { updateMaxCardFromUI } from '../../api-caller/update-max-card.ts';
-import { getMaxUser } from '../utils/maxBridge.ts';
+import { getMaxUser, triggerSoftHapticFeedback } from '../utils/maxBridge.ts';
 import { userCardsCache } from '../utils/userCardsCache.ts';
 import { ModerationAlert } from './ModerationAlert';
 import type { MaxCard } from '../../api-caller/get-user-cards.ts';
@@ -324,6 +324,7 @@ export function CreateInitiativeScreen({ onBack, cardToEdit, onSuccess }: Create
         if (onSuccess) {
           onSuccess();
         } else {
+          triggerSoftHapticFeedback();
           setShowModerationAlert(true);
         }
       } else {
@@ -365,6 +366,7 @@ export function CreateInitiativeScreen({ onBack, cardToEdit, onSuccess }: Create
           return null;
         });
 
+        triggerSoftHapticFeedback();
         setShowModerationAlert(true);
       }
     } catch (error) {

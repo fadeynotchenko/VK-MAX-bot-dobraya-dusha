@@ -25,6 +25,9 @@ declare global {
       close: () => void;
       onEvent: (eventName: string, callback: (data: any) => void) => void;
       offEvent: (eventName: string, callback: (data: any) => void) => void;
+      HapticFeedback?: {
+        impactOccurred: (style: 'soft' | 'light' | 'medium' | 'heavy' | 'rigid') => void;
+      };
     };
   }
 }
@@ -95,4 +98,19 @@ export function notifyMaxReady(): void {
  */
 export function isMaxBridgeAvailable(): boolean {
   return typeof window.WebApp !== 'undefined';
+}
+
+/**
+ * Вызывает мягкую тактильную вибрацию (haptic feedback)
+ * Использует самый мягкий тип вибрации для деликатных взаимодействий
+ */
+export function triggerSoftHapticFeedback(): void {
+  if (window.WebApp?.HapticFeedback?.impactOccurred) {
+    try {
+      window.WebApp.HapticFeedback.impactOccurred('soft');
+    } catch (error) {
+      // Игнорируем ошибки, если вибрация недоступна
+      console.debug('Haptic feedback not available:', error);
+    }
+  }
 }
