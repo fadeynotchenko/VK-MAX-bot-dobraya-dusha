@@ -2,7 +2,7 @@ import type { Bot } from '@maxhub/max-bot-api';
 import { getUserTotalViewCount } from '../../db/db-card-views-utils.ts';
 import { getLastViewCount, saveLastViewCount, saveLastMotivationalMessageId, getLastMotivationalMessageDate, getLastMotivationalMessageId } from '../../db/db-user-utils.ts';
 
-const MOTIVATION_MESSAGES: readonly string[] = [
+const MOTIVATION_MESSAGES_WITH_VIEWS: readonly string[] = [
   '🌟 Каждая инициатива, которую вы просматриваете, может стать реальной помощью для людей. Спасибо за ваше участие!',
   '💚 Ваше внимание к инициативам поддержки — это уже важный шаг. Вместе мы можем сделать больше для тех, кому нужна помощь.',
   '✨ Каждый просмотр — это возможность найти способ помочь. Продолжайте изучать инициативы, ваша поддержка очень важна!',
@@ -15,9 +15,52 @@ const MOTIVATION_MESSAGES: readonly string[] = [
   '🎁 Каждая инициатива — это подарок надежды. Спасибо за то, что вы часть этого движения!',
 ];
 
-function getRandomMotivation(): string {
-  const randomIndex = Math.floor(Math.random() * MOTIVATION_MESSAGES.length);
-  return MOTIVATION_MESSAGES[randomIndex] ?? MOTIVATION_MESSAGES[0]!;
+const MOTIVATION_MESSAGES_NO_VIEWS: readonly string[] = [
+  '💡 Откройте мини-приложение и начните изучать инициативы! Каждый просмотр приближает реальную помощь людям.',
+  '🌟 Изучайте благотворительные проекты в мини-приложении — там вы найдёте множество способов помочь!',
+  '✨ Начните свой путь помощи прямо сейчас! Откройте мини-приложение и посмотрите доступные инициативы.',
+  '🎯 В мини-приложении вас ждут интересные проекты помощи. Откройте и начните изучать!',
+  '💚 Каждая инициатива — это возможность помочь. Откройте мини-приложение и начните исследовать!',
+];
+
+function getRandomMotivation(hasViews: boolean): string {
+  const messages = hasViews ? MOTIVATION_MESSAGES_WITH_VIEWS : MOTIVATION_MESSAGES_NO_VIEWS;
+  const randomIndex = Math.floor(Math.random() * messages.length);
+  return messages[randomIndex] ?? messages[0]!;
+}
+
+interface LevelInfo {
+  name: string;
+  emoji: string;
+  minViews: number;
+}
+
+const LEVELS: readonly LevelInfo[] = [
+  { name: 'Новичок', emoji: '🌱', minViews: 0 },
+  { name: 'Активист', emoji: '⭐', minViews: 6 },
+  { name: 'Волонтер', emoji: '🌟', minViews: 16 },
+  { name: 'Лидер', emoji: '💎', minViews: 31 },
+  { name: 'Мастер', emoji: '👑', minViews: 51 },
+];
+
+function getLevel(totalViews: number): LevelInfo {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (totalViews >= LEVELS[i]!.minViews) {
+      return LEVELS[i]!;
+    }
+  }
+  return LEVELS[0]!;
+}
+
+function getNextLevelInfo(currentLevel: LevelInfo, totalViews: number): { viewsNeeded: number; nextLevel: LevelInfo | null } {
+  const currentIndex = LEVELS.findIndex(level => level.name === currentLevel.name);
+  if (currentIndex === -1 || currentIndex === LEVELS.length - 1) {
+    return { viewsNeeded: 0, nextLevel: null };
+  }
+  
+  const nextLevel = LEVELS[currentIndex + 1]!;
+  const viewsNeeded = nextLevel.minViews - totalViews;
+  return { viewsNeeded, nextLevel };
 }
 
 function formatViewCount(count: number): string {
@@ -56,14 +99,23 @@ function formatCurrentDate(): string {
 function generateMotivationalMessage(viewsThisSession: number, totalViews: number): string {
   const viewsThisSessionText = formatViewCount(viewsThisSession);
   const totalViewsText = formatViewCount(totalViews);
-  const motivation = getRandomMotivation();
+  const motivation = getRandomMotivation(viewsThisSession > 0);
   const currentDate = formatCurrentDate();
+  const level = getLevel(totalViews);
+  const { viewsNeeded, nextLevel } = getNextLevelInfo(level, totalViews);
   
-  if (viewsThisSession === 0) {
-    return `📊 **Статистика за ${currentDate}**\n\n📱 За эту сессию: 0 просмотров\n📈 Всего просмотрено: ${totalViewsText}\n\n${motivation}`;
+  let levelInfo = `\n🏆 Ваш уровень: ${level.emoji} ${level.name}`;
+  if (nextLevel && viewsNeeded > 0) {
+    levelInfo += `\n📈 До уровня ${nextLevel.emoji} ${nextLevel.name}: ${formatViewCount(viewsNeeded)}`;
+  } else if (!nextLevel) {
+    levelInfo += `\n🎉 Вы достигли максимального уровня!`;
   }
   
-  return `📊 **Статистика за ${currentDate}**\n\n📱 За эту сессию: ${viewsThisSessionText}\n📈 Всего просмотрено: ${totalViewsText}\n\n${motivation}`;
+  if (viewsThisSession === 0) {
+    return `📊 Статистика за ${currentDate}\n\n📱 За эту сессию: 0 просмотров\n📈 Всего просмотрено: ${totalViewsText}${levelInfo}\n\n${motivation}`;
+  }
+  
+  return `📊 Статистика за ${currentDate}\n\n📱 За эту сессию: ${viewsThisSessionText}\n📈 Всего просмотрено: ${totalViewsText}${levelInfo}\n\n${motivation}`;
 }
 
 /**
