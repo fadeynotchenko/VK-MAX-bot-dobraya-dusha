@@ -33,11 +33,13 @@ export async function botStartedHandler(ctx: Context) {
     buttons.push(Keyboard.button.link('Открыть мини-приложение', siteUrl));
   }
   buttons.push(Keyboard.button.link('Перейти на VK Добро', 'https://dobro.mail.ru/'));
-  buttons.push(Keyboard.button.callback('🏆 Топ', 'top_command'));
   
   if (buttons.length > 0) {
     keyboardRows.push(buttons);
   }
+  
+  // Кнопка "Топ" на втором горизонтальном уровне
+  keyboardRows.push([Keyboard.button.callback('🏆 Топ', 'top_command')]);
 
   const attachments = keyboardRows.length
     ? [Keyboard.inlineKeyboard(keyboardRows)]

@@ -159,31 +159,41 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
       getLastMotivationalMessageId(userId),
     ]);
 
-    const viewsThisSession = Math.max(0, totalViewCount - lastViewCount);
-    const message = generateMotivationalMessage(viewsThisSession, totalViewCount);
-    
     const wasSentToday = wasMessageSentToday(lastMessageDate);
+    
+    // Вычисляем просмотры за сессию:
+    // - Если сообщение уже было отправлено сегодня, считаем от последнего сохраненного значения
+    //   (которое было сохранено при последнем закрытии/редактировании)
+    // - Если сообщение не было отправлено сегодня (новая сессия/новый день), 
+    //   используем lastViewCount как базовое значение для подсчета просмотров за сессию
+    let baseViewCount = lastViewCount;
+    
+    // Если это первое закрытие приложения сегодня, базовое значение - это lastViewCount
+    // (которое было сохранено при последнем закрытии приложения в предыдущий раз)
+    const viewsThisSession = Math.max(0, totalViewCount - baseViewCount);
+    const message = generateMotivationalMessage(viewsThisSession, totalViewCount);
     
     if (wasSentToday && lastMessageId) {
       // Пытаемся отредактировать существующее сообщение
       try {
         await bot.api.editMessage(lastMessageId, { text: message });
+        // Обновляем lastViewCount после успешного редактирования
         await saveLastViewCount(userId, totalViewCount);
-        console.log(`✅ Статистика отредактирована для пользователя ${userId}`);
+        console.log(`✅ Статистика отредактирована для пользователя ${userId}, просмотров за сессию: ${viewsThisSession}`);
         return;
       } catch (editError: any) {
         // Если редактирование не удалось (сообщение не найдено, чат удален и т.д.)
         // Отправляем новое сообщение
         console.log(`⚠️ Не удалось отредактировать сообщение для пользователя ${userId}, отправляем новое: ${editError?.message || 'Unknown error'}`);
-        // Продолжаем выполнение, чтобы отправить новое сообщение
       }
     }
     
     // Отправляем новое сообщение (если не было отправлено сегодня или редактирование не удалось)
     const newMessage = await bot.api.sendMessageToUser(userId, message);
     await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+    // Сохраняем текущее количество просмотров как базовое для следующей сессии
     await saveLastViewCount(userId, totalViewCount);
-    console.log(`✅ Статистика отправлена пользователю ${userId}`);
+    console.log(`✅ Статистика отправлена пользователю ${userId}, просмотров за сессию: ${viewsThisSession}`);
   } catch (error: any) {
     console.error(`❌ Ошибка при отправке статистики пользователю ${userId}:`, error?.message || error);
     throw error;
