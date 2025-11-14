@@ -100,40 +100,57 @@ export function isMaxBridgeAvailable(): boolean {
 
 /**
  * Подписывается на событие закрытия мини-приложения.
- * Использует несколько механизмов для надежного отслеживания закрытия:
- * 1. MAX Bridge событие viewportChanged с isStateVisible: false (основной способ)
- * 2. Событие pagehide браузера (надежнее beforeunload для мобильных)
- * 3. Событие visibilitychange браузера (fallback)
- * 4. Событие beforeunload браузера (fallback для десктопа)
+ * Использует VK Bridge событие VKWebAppViewHide согласно документации VK Bridge API.
+ * Документация: https://dev.vk.com/mini-apps/development/bridge
  * 
  * @param callback - функция, которая будет вызвана при закрытии приложения
  * @returns функция для отписки от всех событий
  */
 export function onAppClose(callback: () => void): () => void {
-  let lastCallTime = 0;
-  const CALL_THROTTLE_MS = 1000; // Минимальный интервал между вызовами (1 секунда)
+  let hasCalled = false;
   
   const callOnce = () => {
-    const now = Date.now();
-    // Разрешаем повторный вызов, если прошло достаточно времени (на случай если первый не успел)
-    if (now - lastCallTime < CALL_THROTTLE_MS) {
-      console.log(`⚠️ App close callback called too soon (${now - lastCallTime}ms ago), skipping duplicate call`);
+    if (hasCalled) {
       return;
     }
-    lastCallTime = now;
+    hasCalled = true;
     console.log('📱 Calling app close callback');
     try {
-      // Вызываем синхронно, без задержек
       callback();
     } catch (error) {
       console.error('❌ Error in app close callback:', error);
-      // Сбрасываем время последнего вызова при ошибке, чтобы можно было повторить
-      lastCallTime = 0;
+      hasCalled = false; // Разрешаем повторный вызов при ошибке
     }
   };
 
   const cleanupFunctions: Array<() => void> = [];
 
+  // Проверяем наличие VK Bridge (для мини-приложений ВКонтакте)
+  if (typeof window !== 'undefined' && (window as any).vkBridge) {
+    const vkBridge = (window as any).vkBridge;
+    
+    const handleVKEvent = (event: any) => {
+      if (event.detail?.type === 'VKWebAppViewHide') {
+        console.log('📱 VKWebAppViewHide event received');
+        callOnce();
+      }
+    };
+
+    try {
+      vkBridge.subscribe(handleVKEvent);
+      console.log('✅ Subscribed to VKWebAppViewHide event');
+      cleanupFunctions.push(() => {
+        if (vkBridge.unsubscribe) {
+          vkBridge.unsubscribe(handleVKEvent);
+          console.log('🔕 Unsubscribed from VKWebAppViewHide event');
+        }
+      });
+    } catch (error) {
+      console.error('❌ Failed to subscribe to VKWebAppViewHide event:', error);
+    }
+  }
+
+  // Проверяем наличие MAX Bridge (для мини-приложений MAX)
   if (window.WebApp?.onEvent) {
     const handleViewportChanged = (data: any) => {
       console.log('🔔 viewportChanged event received:', data);
@@ -145,7 +162,7 @@ export function onAppClose(callback: () => void): () => void {
 
     try {
       window.WebApp.onEvent('viewportChanged', handleViewportChanged);
-      console.log('✅ Subscribed to viewportChanged event');
+      console.log('✅ Subscribed to viewportChanged event (MAX Bridge)');
       cleanupFunctions.push(() => {
         if (window.WebApp?.offEvent) {
           window.WebApp.offEvent('viewportChanged', handleViewportChanged);
@@ -155,42 +172,18 @@ export function onAppClose(callback: () => void): () => void {
     } catch (error) {
       console.error('❌ Failed to subscribe to viewportChanged event:', error);
     }
-  } else {
-    console.warn('⚠️ MAX Bridge onEvent is not available, using browser events only');
   }
 
+  // Fallback: событие pagehide (надежнее для мобильных)
   const handlePageHide = (event: PageTransitionEvent) => {
     if (!event.persisted) {
       console.log('📱 App close event detected (pagehide)');
       callOnce();
-    } else {
-      console.log('📱 Page hidden but persisted (likely cached), not treating as close');
     }
   };
   window.addEventListener('pagehide', handlePageHide);
   cleanupFunctions.push(() => {
     window.removeEventListener('pagehide', handlePageHide);
-  });
-
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'hidden') {
-      console.log('📱 App close event detected (visibilitychange: hidden)');
-      // Вызываем сразу, без setTimeout - браузер может прервать выполнение до завершения setTimeout
-      callOnce();
-    }
-  };
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  cleanupFunctions.push(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-  });
-
-  const handleBeforeUnload = () => {
-    console.log('📱 App close event detected (beforeunload)');
-    callOnce();
-  };
-  window.addEventListener('beforeunload', handleBeforeUnload);
-  cleanupFunctions.push(() => {
-    window.removeEventListener('beforeunload', handleBeforeUnload);
   });
 
   return () => {

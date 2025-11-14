@@ -45,8 +45,6 @@ export default function App() {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const savedScrollPositionRef = useRef<number>(0);
   const shouldRestoreScrollRef = useRef<boolean>(false);
-  const lastStatsSendRef = useRef<number>(0);
-  const statsTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -100,7 +98,6 @@ export default function App() {
     }
   }, [activeTab]);
 
-  // Отправка статистики при закрытии приложения
   useEffect(() => {
     const maxUser = getMaxUser();
     if (!maxUser?.id) {
@@ -120,45 +117,6 @@ export default function App() {
       unsubscribe();
     };
   }, []);
-
-  // Отправка статистики при просмотре карточек (debounced, для надежности на мобильных)
-  useEffect(() => {
-    const maxUser = getMaxUser();
-    if (!maxUser?.id || viewedCardIds.size === 0) {
-      return;
-    }
-
-    // Очищаем предыдущий таймаут
-    if (statsTimeoutRef.current) {
-      clearTimeout(statsTimeoutRef.current);
-    }
-
-    // Отправляем статистику через 3 секунды после просмотра карточки
-    // Это гарантирует отправку даже если приложение закроется быстро
-    // Но не отправляем чаще чем раз в 10 секунд
-    const now = Date.now();
-    const timeSinceLastSend = now - lastStatsSendRef.current;
-    const MIN_INTERVAL_MS = 10000; // Минимум 10 секунд между отправками
-
-    if (timeSinceLastSend < MIN_INTERVAL_MS) {
-      console.log(`⏸️ Skipping stats send (too soon: ${timeSinceLastSend}ms ago)`);
-      return;
-    }
-
-    statsTimeoutRef.current = window.setTimeout(() => {
-      console.log(`📊 Sending statistics after card view for user ${maxUser.id}`);
-      lastStatsSendRef.current = Date.now();
-      notifyAppClose(maxUser.id).catch((err) => {
-        console.error(`❌ Failed to send statistics:`, err);
-      });
-    }, 3000);
-
-    return () => {
-      if (statsTimeoutRef.current) {
-        clearTimeout(statsTimeoutRef.current);
-      }
-    };
-  }, [viewedCardIds.size]);
 
   // Сохраняем позицию скролла перед открытием детального экрана
   const handleCardSelect = (card: MaxCard) => {
