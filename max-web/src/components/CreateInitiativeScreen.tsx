@@ -270,7 +270,7 @@ export function CreateInitiativeScreen({ onBack, cardToEdit, onSuccess }: Create
 
   const handleDescriptionChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const value = event.target.value;
-    if (value.length <= 1000) {
+    if (value.length <= 5000) {
       setDescription(value);
     }
   };
@@ -524,7 +524,7 @@ export function CreateInitiativeScreen({ onBack, cardToEdit, onSuccess }: Create
             onChange={handleDescriptionChange}
             onFocus={() => setFocusedField('description')}
             onBlur={() => setFocusedField(null)}
-            maxLength={1000}
+            maxLength={5000}
             style={{
               ...textareaStyle,
               minHeight: 140,
@@ -533,7 +533,7 @@ export function CreateInitiativeScreen({ onBack, cardToEdit, onSuccess }: Create
           />
         </div>
         <Typography.Label style={charCounterStyle}>
-          {description.length}/1000
+          {description.length}/5000
         </Typography.Label>
       </div>
 
