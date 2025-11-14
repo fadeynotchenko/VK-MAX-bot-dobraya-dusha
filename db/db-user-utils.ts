@@ -21,6 +21,7 @@ export async function upsertUser(user_id: number, name: string) {
     },
     { upsert: true }
   );
+  console.log(`✅ Пользователь ${user_id} добавлен или обновлен в базе данных`);
 }
 
 /**
@@ -54,6 +55,7 @@ export async function saveLastViewCount(user_id: number, viewCount: number): Pro
     },
     { upsert: true }
   );
+  console.log(`✅ Сохранено количество просмотров для пользователя ${user_id}: ${viewCount}`);
 }
 
 /**
@@ -76,18 +78,36 @@ export async function getLastMotivationalMessageId(user_id: number): Promise<str
  * 
  * @param user_id - идентификатор пользователя
  * @param messageId - ID сообщения
+ * @param messageText - текст сообщения
  */
-export async function saveLastMotivationalMessageId(user_id: number, messageId: string): Promise<void> {
+export async function saveLastMotivationalMessageId(user_id: number, messageId: string, messageText?: string): Promise<void> {
   await db.collection('max_users').updateOne(
     { user_id: user_id },
     {
       $set: {
         lastMotivationalMessageId: messageId,
         lastMotivationalMessageDate: new Date(),
+        ...(messageText ? { lastMotivationalMessageText: messageText } : {}),
       }
     },
     { upsert: true }
   );
+  console.log(`✅ Сохранен ID мотивационного сообщения для пользователя ${user_id}: ${messageId}`);
+}
+
+/**
+ * Получает текст последнего отправленного мотивационного сообщения для пользователя.
+ * 
+ * @param user_id - идентификатор пользователя
+ * @returns Текст сообщения или null, если сообщение не было отправлено
+ */
+export async function getLastMotivationalMessageText(user_id: number): Promise<string | null> {
+  const user = await db.collection('max_users').findOne(
+    { user_id: user_id },
+    { projection: { lastMotivationalMessageText: 1 } }
+  );
+  
+  return (user?.lastMotivationalMessageText as string) || null;
 }
 
 /**
@@ -124,10 +144,12 @@ export async function clearLastMotivationalMessage(user_id: number): Promise<voi
       $unset: {
         lastMotivationalMessageId: '',
         lastMotivationalMessageDate: '',
+        lastMotivationalMessageText: '',
       }
     },
     { upsert: false }
   );
+  console.log(`✅ Очищены данные о мотивационном сообщении для пользователя ${user_id}`);
 }
 
 /**
@@ -137,6 +159,15 @@ export type TopUser = {
   user_id: number;
   name: string;
   cards_count: number;
+  total_views: number;
+};
+
+/**
+ * Тип для топ пользователя по просмотрам
+ */
+export type TopUserByViews = {
+  user_id: number;
+  name: string;
   total_views: number;
 };
 
@@ -203,6 +234,7 @@ export async function getTopUsersByCards(limit: number = 10): Promise<TopUser[]>
   const topUsersData = await cardsCollection.aggregate(pipeline).toArray();
 
   if (topUsersData.length === 0) {
+    console.log(`ℹ️ Топ пользователей по карточкам пуст (лимит: ${limit})`);
     return [];
   }
 
@@ -218,7 +250,7 @@ export async function getTopUsersByCards(limit: number = 10): Promise<TopUser[]>
   });
 
   // Формируем результат
-  return topUsersData.map((item: any) => {
+  const result = topUsersData.map((item: any) => {
     const userId = item._id;
     const userName = userMap.get(userId) || `Пользователь ${userId}`;
     
@@ -229,4 +261,68 @@ export async function getTopUsersByCards(limit: number = 10): Promise<TopUser[]>
       total_views: item.total_views || 0,
     };
   });
+  
+  console.log(`✅ Получен топ пользователей по карточкам: ${result.length} пользователей`);
+  return result;
+}
+
+/**
+ * Получает топ пользователей по количеству просмотров карточек (когда они сами просматривали).
+ * 
+ * Возвращает до указанного количества пользователей с наибольшим количеством просмотров.
+ * 
+ * @param limit - максимальное количество пользователей в топе (по умолчанию 5)
+ * @returns Массив пользователей, отсортированных по количеству просмотров (по убыванию)
+ * 
+ * Успешное выполнение возвращает массив пользователей с количеством просмотров.
+ * В случае ошибки пробрасывает исключение MongoDB.
+ */
+export async function getTopUsersByViews(limit: number = 5): Promise<TopUserByViews[]> {
+  const viewsCollection = db.collection('card_views');
+  const usersCollection = db.collection('max_users');
+
+  // Получаем топ пользователей по сумме всех просмотров
+  const pipeline = [
+    {
+      $group: {
+        _id: '$user_id',
+        total_views: { $sum: '$view_count' },
+      },
+    },
+    { $sort: { total_views: -1 } },
+    { $limit: limit },
+  ];
+
+  const topUsersData = await viewsCollection.aggregate(pipeline).toArray();
+
+  if (topUsersData.length === 0) {
+    console.log(`ℹ️ Топ пользователей по просмотрам пуст (лимит: ${limit})`);
+    return [];
+  }
+
+  // Получаем имена пользователей
+  const userIds = topUsersData.map((item: any) => item._id);
+  const users = await usersCollection
+    .find({ user_id: { $in: userIds } })
+    .toArray();
+
+  const userMap = new Map<number, string>();
+  users.forEach((user: any) => {
+    userMap.set(user.user_id, user.name || `Пользователь ${user.user_id}`);
+  });
+
+  // Формируем результат
+  const result = topUsersData.map((item: any) => {
+    const userId = item._id;
+    const userName = userMap.get(userId) || `Пользователь ${userId}`;
+    
+    return {
+      user_id: userId,
+      name: userName,
+      total_views: item.total_views || 0,
+    };
+  });
+  
+  console.log(`✅ Получен топ пользователей по просмотрам: ${result.length} пользователей`);
+  return result;
 }

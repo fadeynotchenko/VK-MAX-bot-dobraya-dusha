@@ -103,7 +103,7 @@ class UserCardsCacheManager {
       try {
         listener(userId, cards);
       } catch (error) {
-        console.error('Error in cache listener:', error);
+        console.error(`❌ Ошибка в обработчике кеша для пользователя ${userId}:`, error);
       }
     });
   }

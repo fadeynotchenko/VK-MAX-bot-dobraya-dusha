@@ -346,7 +346,7 @@ export function CreateInitiativeScreen({ onBack, cardToEdit, onSuccess }: Create
             userCardsCache.addCardToCache(maxUser.id, createdCard);
           } else {
             userCardsCache.invalidateUserCache(maxUser.id).catch((err) => {
-              console.error('Failed to invalidate cache:', err);
+              console.error(`❌ Не удалось инвалидировать кеш для пользователя ${maxUser.id}:`, err);
             });
           }
         }

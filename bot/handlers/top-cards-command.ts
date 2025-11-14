@@ -22,7 +22,7 @@ function formatViewCount(count: number): string {
 }
 
 /**
- * Обработчик команды /top.
+ * Обработчик команды /topcards.
  * 
  * Показывает топ пользователей по количеству созданных инициатив (топ 10, или меньше, если пользователей меньше).
  * 
@@ -54,7 +54,8 @@ export async function topCommandHandler(ctx: Context): Promise<void> {
 
     await ctx.reply(message);
   } catch (error: any) {
-    console.error('❌ Ошибка при выполнении команды /top:', error?.message || error);
+    const userId = ctx.user?.user_id || 'неизвестного';
+    console.error(`❌ Ошибка при выполнении команды /topcards для пользователя ${userId}:`, error?.message || error);
     await ctx.reply('❌ Произошла ошибка при получении топа пользователей. Попробуйте позже.');
   }
 }

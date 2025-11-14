@@ -28,6 +28,7 @@ export async function handleGetViewedCards(req: FastifyRequest, reply: FastifyRe
 
     const viewedCardIds = await getUserViewedCardIds(userId);
     
+    console.log(`✅ Просмотренные карточки загружены для пользователя ${userId} (${viewedCardIds.length} карточек)`);
     req.log.info({ method: 'getViewedCards', user_id: userId, count: viewedCardIds.length }, `Successfully executed getViewedCards for user: ${userId}`);
     
     return reply.code(200).send({ ok: true, data: viewedCardIds });

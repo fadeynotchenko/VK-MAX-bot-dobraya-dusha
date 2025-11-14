@@ -158,7 +158,7 @@ export function UserCardView({ card, onOpen, onEdit, onDelete }: UserCardViewPro
       await onDelete(card.id);
       setShowDeleteModal(false);
     } catch (error) {
-      console.error('Failed to delete card:', error);
+      console.error(`❌ Не удалось удалить карточку ${card.id}:`, error);
       // Можно добавить уведомление об ошибке
     } finally {
       setIsDeleting(false);

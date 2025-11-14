@@ -53,7 +53,7 @@ export default function App() {
     Promise.all([
       fetchMaxCardsFromUI(),
       maxUser?.id ? fetchViewedCardsFromUI(maxUser.id).catch((err) => {
-        console.error('Failed to fetch viewed cards:', err);
+        console.error(`❌ Не удалось загрузить просмотренные карточки для пользователя ${maxUser.id}:`, err);
         return [] as string[];
       }) : Promise.resolve([] as string[]),
     ])
@@ -175,7 +175,7 @@ export default function App() {
           });
         })
         .catch((err) => {
-          console.error('Failed to track card view:', err);
+          console.error(`❌ Не удалось засчитать просмотр карточки ${cardId} для пользователя ${maxUser.id}:`, err);
           setViewedCardIds((prev) => {
             const newSet = new Set(prev);
             newSet.delete(cardId);

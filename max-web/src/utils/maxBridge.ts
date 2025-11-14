@@ -120,12 +120,12 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
   
   if (isMobile) {
     appWasOpened = true;
-    console.log(`✅ App marked as opened immediately for mobile user ${userId}`);
+    console.log(`✅ Приложение отмечено как открытое для мобильного пользователя ${userId}`);
   } else {
     const openDelay = 2000;
     const openTimeout = setTimeout(() => {
       appWasOpened = true;
-      console.log(`✅ App marked as opened for desktop user ${userId}`);
+      console.log(`✅ Приложение отмечено как открытое для десктопного пользователя ${userId}`);
     }, openDelay);
     
     cleanupFunctions.push(() => {
@@ -139,7 +139,7 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
     }
     
     if (!isMobile && !appWasOpened) {
-      console.log(`⚠️ Skipping app close notification - app was not fully opened yet (user ${userId})`);
+      console.log(`⚠️ Пропуск уведомления о закрытии приложения - приложение ещё не было полностью открыто (пользователь ${userId})`);
       return;
     }
     
@@ -156,21 +156,21 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
           formData.append('user_id', userId.toString());
           
           if (sendBeacon(url, formData)) {
-            console.log(`✅ App close notification sent via sendBeacon for user ${userId}`);
+            console.log(`✅ Уведомление о закрытии приложения отправлено через sendBeacon для пользователя ${userId}`);
             return;
           }
         } catch (error) {
-          console.error(`❌ sendBeacon error for user ${userId}:`, error);
+          console.error(`❌ Ошибка sendBeacon для пользователя ${userId}:`, error);
         }
 
         try {
           const blob = new Blob([JSON.stringify({ user_id: userId })], { type: 'application/json' });
           if (sendBeacon(url, blob)) {
-            console.log(`✅ App close notification sent via sendBeacon (Blob) for user ${userId}`);
+            console.log(`✅ Уведомление о закрытии приложения отправлено через sendBeacon (Blob) для пользователя ${userId}`);
             return;
           }
         } catch (error) {
-          console.error(`❌ sendBeacon (Blob) error for user ${userId}:`, error);
+          console.error(`❌ Ошибка sendBeacon (Blob) для пользователя ${userId}:`, error);
         }
       }
     }
@@ -183,13 +183,13 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
         keepalive: true,
       }).catch(() => {});
     } catch (error) {
-      console.error(`❌ Failed to notify app close for user ${userId}:`, error);
+      console.error(`❌ Не удалось отправить уведомление о закрытии приложения для пользователя ${userId}:`, error);
     }
   };
 
   if (window.WebApp?.onEvent) {
     const handleBackButton = () => {
-      console.log('📱 App close event detected (backButtonClicked)');
+      console.log(`📱 Обнаружено событие закрытия приложения (backButtonClicked) для пользователя ${userId}`);
       sendNotification();
     };
 
@@ -201,12 +201,12 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
         }
       });
     } catch (error) {
-      console.error('❌ Failed to subscribe to backButtonClicked event:', error);
+      console.error(`❌ Не удалось подписаться на событие backButtonClicked для пользователя ${userId}:`, error);
     }
 
     const handleViewportChanged = (data: any) => {
       if (data?.isStateVisible === false || data?.isExpanded === false) {
-        console.log('📱 App close event detected (viewportChanged)');
+        console.log(`📱 Обнаружено событие закрытия приложения (viewportChanged) для пользователя ${userId}`);
         sendNotification();
       }
     };
@@ -219,12 +219,12 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
         }
       });
     } catch (error) {
-      console.error('❌ Failed to subscribe to viewportChanged event:', error);
+      console.error(`❌ Не удалось подписаться на событие viewportChanged для пользователя ${userId}:`, error);
     }
   }
 
   const handleBlur = () => {
-    console.log('📱 App close event detected (blur)');
+    console.log(`📱 Обнаружено событие закрытия приложения (blur) для пользователя ${userId}`);
     sendNotification();
   };
   window.addEventListener('blur', handleBlur, { capture: true });
@@ -234,7 +234,7 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
 
   const handlePageHide = (event: PageTransitionEvent) => {
     if (!event.persisted) {
-      console.log('📱 App close event detected (pagehide)');
+      console.log(`📱 Обнаружено событие закрытия приложения (pagehide) для пользователя ${userId}`);
       sendNotification();
     }
   };
@@ -245,7 +245,7 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
 
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
-      console.log('📱 App close event detected (visibilitychange)');
+      console.log(`📱 Обнаружено событие закрытия приложения (visibilitychange) для пользователя ${userId}`);
       sendNotification();
     }
   };
@@ -255,7 +255,7 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
   });
 
   const handleUnload = () => {
-    console.log('📱 App close event detected (unload)');
+    console.log(`📱 Обнаружено событие закрытия приложения (unload) для пользователя ${userId}`);
     sendNotification();
   };
   window.addEventListener('unload', handleUnload);
@@ -264,7 +264,7 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
   });
 
   const handleBeforeUnload = () => {
-    console.log('📱 App close event detected (beforeunload)');
+    console.log(`📱 Обнаружено событие закрытия приложения (beforeunload) для пользователя ${userId}`);
     sendNotification();
   };
   window.addEventListener('beforeunload', handleBeforeUnload);

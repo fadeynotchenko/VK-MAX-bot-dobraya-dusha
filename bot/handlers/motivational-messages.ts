@@ -1,6 +1,6 @@
 import type { Bot } from '@maxhub/max-bot-api';
 import { getUserTotalViewCount } from '../../db/db-card-views-utils.ts';
-import { getLastViewCount, saveLastViewCount, saveLastMotivationalMessageId, getLastMotivationalMessageDate, getLastMotivationalMessageId } from '../../db/db-user-utils.ts';
+import { getLastViewCount, saveLastViewCount, saveLastMotivationalMessageId, getLastMotivationalMessageId, getLastMotivationalMessageText } from '../../db/db-user-utils.ts';
 
 const MOTIVATION_MESSAGES_WITH_VIEWS: readonly string[] = [
   '🌟 Каждая инициатива, которую вы просматриваете, может стать реальной помощью для людей. Спасибо за ваше участие!',
@@ -119,32 +119,12 @@ function generateMotivationalMessage(viewsThisSession: number, totalViews: numbe
 }
 
 /**
- * Проверяет, была ли отправка мотивационного сообщения сегодня.
- * 
- * @param lastMessageDate - дата последнего сообщения или null
- * @returns true, если сообщение было отправлено сегодня
- */
-function wasMessageSentToday(lastMessageDate: Date | null): boolean {
-  if (!lastMessageDate) {
-    return false;
-  }
-  
-  const today = new Date();
-  const lastDate = new Date(lastMessageDate);
-  
-  return (
-    today.getFullYear() === lastDate.getFullYear() &&
-    today.getMonth() === lastDate.getMonth() &&
-    today.getDate() === lastDate.getDate()
-  );
-}
-
-/**
  * Отправляет мотивационное сообщение со статистикой пользователю при закрытии мини-приложения.
  * 
  * Логика работы:
- * - Если сообщение уже было отправлено сегодня - редактирует существующее сообщение
- * - Если сообщение не было отправлено сегодня - отправляет новое
+ * - Всегда генерирует новое сообщение со статистикой
+ * - Если предыдущее сообщение имеет такой же текст - редактирует существующее сообщение
+ * - Если тексты разные или предыдущего сообщения нет - отправляет новое сообщение
  * - Если редактирование не удалось (например, пользователь удалил чат) - отправляет новое сообщение
  * 
  * @param bot - экземпляр бота для отправки сообщений
@@ -152,29 +132,19 @@ function wasMessageSentToday(lastMessageDate: Date | null): boolean {
  */
 export async function checkAndSendMotivationalMessage(bot: Bot, userId: number): Promise<void> {
   try {
-    const [totalViewCount, lastViewCount, lastMessageDate, lastMessageId] = await Promise.all([
+    const [totalViewCount, lastViewCount, lastMessageId, lastMessageText] = await Promise.all([
       getUserTotalViewCount(userId),
       getLastViewCount(userId),
-      getLastMotivationalMessageDate(userId),
       getLastMotivationalMessageId(userId),
+      getLastMotivationalMessageText(userId),
     ]);
-
-    const wasSentToday = wasMessageSentToday(lastMessageDate);
     
-    // Вычисляем просмотры за сессию:
-    // - Если сообщение уже было отправлено сегодня, считаем от последнего сохраненного значения
-    //   (которое было сохранено при последнем закрытии/редактировании)
-    // - Если сообщение не было отправлено сегодня (новая сессия/новый день), 
-    //   используем lastViewCount как базовое значение для подсчета просмотров за сессию
-    let baseViewCount = lastViewCount;
-    
-    // Если это первое закрытие приложения сегодня, базовое значение - это lastViewCount
-    // (которое было сохранено при последнем закрытии приложения в предыдущий раз)
-    const viewsThisSession = Math.max(0, totalViewCount - baseViewCount);
+    // Вычисляем просмотры за сессию от последнего сохраненного значения
+    const viewsThisSession = Math.max(0, totalViewCount - lastViewCount);
     const message = generateMotivationalMessage(viewsThisSession, totalViewCount);
     
-    if (wasSentToday && lastMessageId) {
-      // Пытаемся отредактировать существующее сообщение
+    // Если есть предыдущее сообщение с таким же текстом - редактируем его
+    if (lastMessageId && lastMessageText === message) {
       try {
         await bot.api.editMessage(lastMessageId, { text: message });
         // Обновляем lastViewCount после успешного редактирования
@@ -188,9 +158,9 @@ export async function checkAndSendMotivationalMessage(bot: Bot, userId: number):
       }
     }
     
-    // Отправляем новое сообщение (если не было отправлено сегодня или редактирование не удалось)
+    // Отправляем новое сообщение (если тексты разные, предыдущего сообщения нет или редактирование не удалось)
     const newMessage = await bot.api.sendMessageToUser(userId, message);
-    await saveLastMotivationalMessageId(userId, newMessage.body.mid);
+    await saveLastMotivationalMessageId(userId, newMessage.body.mid, message);
     // Сохраняем текущее количество просмотров как базовое для следующей сессии
     await saveLastViewCount(userId, totalViewCount);
     console.log(`✅ Статистика отправлена пользователю ${userId}, просмотров за сессию: ${viewsThisSession}`);

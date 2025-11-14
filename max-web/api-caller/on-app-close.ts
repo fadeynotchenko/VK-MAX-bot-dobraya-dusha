@@ -8,7 +8,7 @@ type OnAppCloseResponse =
  * Отправляет событие закрытия мини-приложения на сервер
  */
 export async function notifyAppClose(userId: number, useBeacon: boolean = true): Promise<void> {
-  console.log(`📱 Notifying server about app close for user ${userId} (useBeacon: ${useBeacon})`);
+  console.log(`📱 Уведомление сервера о закрытии приложения для пользователя ${userId} (useBeacon: ${useBeacon})`);
 
   const payload = {
     user_id: userId,
@@ -27,13 +27,13 @@ export async function notifyAppClose(userId: number, useBeacon: boolean = true):
         const sent = sendBeacon(url, formData);
         
         if (sent) {
-          console.log(`✅ App close notification sent via sendBeacon (FormData) for user ${userId}`);
+          console.log(`✅ Уведомление о закрытии приложения отправлено через sendBeacon (FormData) для пользователя ${userId}`);
           return;
         } else {
-          console.warn(`⚠️ sendBeacon (FormData) returned false for user ${userId}, trying Blob`);
+          console.warn(`⚠️ sendBeacon (FormData) вернул false для пользователя ${userId}, пробуем Blob`);
         }
       } catch (error) {
-        console.error(`❌ sendBeacon (FormData) error for user ${userId}:`, error);
+        console.error(`❌ Ошибка sendBeacon (FormData) для пользователя ${userId}:`, error);
       }
 
       try {
@@ -41,13 +41,13 @@ export async function notifyAppClose(userId: number, useBeacon: boolean = true):
         const sent = sendBeacon(url, blob);
         
         if (sent) {
-          console.log(`✅ App close notification sent via sendBeacon (Blob/JSON) for user ${userId}`);
+          console.log(`✅ Уведомление о закрытии приложения отправлено через sendBeacon (Blob/JSON) для пользователя ${userId}`);
           return;
         } else {
-          console.warn(`⚠️ sendBeacon (Blob) returned false for user ${userId}, falling back to fetch`);
+          console.warn(`⚠️ sendBeacon (Blob) вернул false для пользователя ${userId}, используем fetch`);
         }
       } catch (error) {
-        console.error(`❌ sendBeacon (Blob) error for user ${userId}:`, error);
+        console.error(`❌ Ошибка sendBeacon (Blob) для пользователя ${userId}:`, error);
       }
     }
   }
@@ -62,19 +62,19 @@ export async function notifyAppClose(userId: number, useBeacon: boolean = true):
       keepalive: true,
     });
 
-    console.log(`✅ App close notification sent via fetch (keepalive) for user ${userId}`);
+    console.log(`✅ Уведомление о закрытии приложения отправлено через fetch (keepalive) для пользователя ${userId}`);
     
     if (response.ok) {
       response.json().then((result: unknown) => {
         const typedResult = result as OnAppCloseResponse;
         if (!typedResult.ok) {
-          console.error(`❌ Server returned error for app close: ${typedResult.error}`);
+          console.error(`❌ Сервер вернул ошибку при закрытии приложения для пользователя ${userId}: ${typedResult.error}`);
         }
       }).catch(() => {
       });
     }
   } catch (error) {
-    console.error(`❌ Failed to notify app close for user ${userId}:`, error);
+    console.error(`❌ Не удалось отправить уведомление о закрытии приложения для пользователя ${userId}:`, error);
   }
 }
 

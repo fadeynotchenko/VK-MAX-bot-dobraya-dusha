@@ -15,8 +15,6 @@ export async function botStartedHandler(ctx: Context) {
 
   await upsertUser(user.user_id, user.name);
   
-  // Очищаем данные о мотивационном сообщении, так как диалог начат заново
-  // и старые сообщения больше не существуют
   await clearLastMotivationalMessage(user.user_id);
 
   const siteUrl = process.env.WEB_APP_URL;
@@ -26,14 +24,16 @@ export async function botStartedHandler(ctx: Context) {
     console.warn('⚠️ Переменная окружения WEB_APP_URL не задана. Клавиатура со ссылкой не будет отправлена.');
   }
 
-  // Располагаем все кнопки вертикально (каждая кнопка в отдельном массиве)
   const keyboardRows: Parameters<typeof Keyboard.inlineKeyboard>[0] = [];
   
   if (siteUrl && !isLocalhost) {
     keyboardRows.push([Keyboard.button.link('Открыть мини-приложение', siteUrl)]);
   }
   keyboardRows.push([Keyboard.button.link('Перейти на VK Добро', 'https://dobro.mail.ru/')]);
-  keyboardRows.push([Keyboard.button.callback('🏆 Топ', 'top_command')]);
+  keyboardRows.push([
+    Keyboard.button.callback('🏆 Топ инициатив', 'top_command'),
+    Keyboard.button.callback('👁️ Топ просмотров', 'top_views_command'),
+  ]);
 
   const attachments = keyboardRows.length
     ? [Keyboard.inlineKeyboard(keyboardRows)]
@@ -57,5 +57,5 @@ export async function botStartedHandler(ctx: Context) {
         }
       : undefined,
   );
-  console.log('ℹ️ bot-started событие активировано для пользователя:', user.user_id);
+  console.log(`✅ Событие bot-started обработано для пользователя ${user.user_id}`);
 }
