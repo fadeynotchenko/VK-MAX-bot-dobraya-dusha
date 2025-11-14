@@ -110,18 +110,25 @@ export function isMaxBridgeAvailable(): boolean {
  * @returns функция для отписки от всех событий
  */
 export function onAppClose(callback: () => void): () => void {
-  let hasCalled = false;
+  let lastCallTime = 0;
+  const CALL_THROTTLE_MS = 1000; // Минимальный интервал между вызовами (1 секунда)
+  
   const callOnce = () => {
-    if (hasCalled) {
-      console.log('⚠️ App close callback already called, skipping duplicate call');
+    const now = Date.now();
+    // Разрешаем повторный вызов, если прошло достаточно времени (на случай если первый не успел)
+    if (now - lastCallTime < CALL_THROTTLE_MS) {
+      console.log(`⚠️ App close callback called too soon (${now - lastCallTime}ms ago), skipping duplicate call`);
       return;
     }
-    hasCalled = true;
+    lastCallTime = now;
     console.log('📱 Calling app close callback');
     try {
+      // Вызываем синхронно, без задержек
       callback();
     } catch (error) {
       console.error('❌ Error in app close callback:', error);
+      // Сбрасываем время последнего вызова при ошибке, чтобы можно было повторить
+      lastCallTime = 0;
     }
   };
 
@@ -168,11 +175,8 @@ export function onAppClose(callback: () => void): () => void {
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
       console.log('📱 App close event detected (visibilitychange: hidden)');
-      setTimeout(() => {
-        if (document.visibilityState === 'hidden') {
-          callOnce();
-        }
-      }, 100);
+      // Вызываем сразу, без setTimeout - браузер может прервать выполнение до завершения setTimeout
+      callOnce();
     }
   };
   document.addEventListener('visibilitychange', handleVisibilityChange);

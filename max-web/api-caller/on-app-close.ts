@@ -22,25 +22,43 @@ export async function notifyAppClose(userId: number, useBeacon: boolean = true):
     user_id: userId,
   };
 
-  if (useBeacon && navigator.sendBeacon) {
+  // Пробуем sendBeacon с FormData (более надежно для серверов, которые ожидают multipart/form-data)
+  if (useBeacon && typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
     try {
       const formData = new FormData();
       formData.append('user_id', userId.toString());
       
       const url = `${API}/on-app-close`;
-      const sent = navigator.sendBeacon(url, formData);
+      const sent = (navigator as any).sendBeacon(url, formData);
       
       if (sent) {
-        console.log(`✅ App close notification sent via sendBeacon for user ${userId}`);
+        console.log(`✅ App close notification sent via sendBeacon (FormData) for user ${userId}`);
         return;
       } else {
-        console.warn(`⚠️ sendBeacon failed for user ${userId}, falling back to fetch`);
+        console.warn(`⚠️ sendBeacon (FormData) failed for user ${userId}, trying Blob`);
       }
     } catch (error) {
-      console.error(`❌ sendBeacon error for user ${userId}:`, error);
+      console.error(`❌ sendBeacon (FormData) error for user ${userId}:`, error);
+    }
+
+    // Fallback: пробуем sendBeacon с Blob (JSON)
+    try {
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      const url = `${API}/on-app-close`;
+      const sent = (navigator as any).sendBeacon(url, blob);
+      
+      if (sent) {
+        console.log(`✅ App close notification sent via sendBeacon (Blob/JSON) for user ${userId}`);
+        return;
+      } else {
+        console.warn(`⚠️ sendBeacon (Blob) failed for user ${userId}, falling back to fetch`);
+      }
+    } catch (error) {
+      console.error(`❌ sendBeacon (Blob) error for user ${userId}:`, error);
     }
   }
 
+  // Последний fallback: fetch с keepalive
   try {
     const response = await fetch(`${API}/on-app-close`, {
       method: 'POST',
@@ -48,7 +66,7 @@ export async function notifyAppClose(userId: number, useBeacon: boolean = true):
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
-      keepalive: true,
+      keepalive: true, // Критически важно для отправки при закрытии
     });
 
     if (!response.ok) {
@@ -61,9 +79,10 @@ export async function notifyAppClose(userId: number, useBeacon: boolean = true):
       throw new Error(result.error || 'Failed to notify app close');
     }
 
-    console.log(`✅ App close notification sent successfully for user ${userId}`);
+    console.log(`✅ App close notification sent successfully via fetch for user ${userId}`);
   } catch (error) {
     console.error(`❌ Failed to notify app close for user ${userId}:`, error);
+    // Не пробрасываем ошибку дальше, так как приложение уже закрывается
   }
 }
 

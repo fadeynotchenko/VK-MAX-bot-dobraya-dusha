@@ -42,9 +42,32 @@ export async function handleOnAppClose(req: FastifyRequest, reply: FastifyReply)
           req.log.error({ method: 'onAppClose', error: fallbackError }, 'Fallback parsing also failed');
         }
       }
+    } else if (contentType.includes('application/json') || contentType === '') {
+      // Обработка JSON (включая случай когда sendBeacon отправляет Blob с JSON)
+      try {
+        const body = req.body as any;
+        user_id = body?.user_id;
+      } catch (parseError: any) {
+        req.log.error({ method: 'onAppClose', error: parseError?.message }, 'Failed to parse JSON body');
+        // Пробуем прочитать как текст и распарсить вручную
+        try {
+          const rawBody = req.body as string;
+          if (typeof rawBody === 'string') {
+            const parsed = JSON.parse(rawBody);
+            user_id = parsed?.user_id;
+          }
+        } catch (fallbackError) {
+          req.log.error({ method: 'onAppClose', error: fallbackError }, 'Fallback JSON parsing also failed');
+        }
+      }
     } else {
-      const body = req.body as any;
-      user_id = body?.user_id;
+      // Неизвестный content-type, пробуем распарсить как JSON
+      try {
+        const body = req.body as any;
+        user_id = body?.user_id;
+      } catch (parseError: any) {
+        req.log.error({ method: 'onAppClose', error: parseError?.message, content_type: contentType }, 'Failed to parse body with unknown content-type');
+      }
     }
 
     if (!user_id || isNaN(user_id) || user_id <= 0) {
