@@ -27,10 +27,17 @@ export async function botStartedHandler(ctx: Context) {
   }
 
   const keyboardRows: Parameters<typeof Keyboard.inlineKeyboard>[0] = [];
+  const buttons: Parameters<typeof Keyboard.inlineKeyboard>[0][0] = [];
+  
   if (siteUrl && !isLocalhost) {
-    keyboardRows.push([Keyboard.button.link('Открыть мини-приложение', siteUrl)]);
+    buttons.push(Keyboard.button.link('Открыть мини-приложение', siteUrl));
   }
-  keyboardRows.push([Keyboard.button.link('Перейти на VK Добро', 'https://dobro.mail.ru/')]);
+  buttons.push(Keyboard.button.link('Перейти на VK Добро', 'https://dobro.mail.ru/'));
+  buttons.push(Keyboard.button.callback('🏆 Топ', 'top_command'));
+  
+  if (buttons.length > 0) {
+    keyboardRows.push(buttons);
+  }
 
   const attachments = keyboardRows.length
     ? [Keyboard.inlineKeyboard(keyboardRows)]

@@ -283,3 +283,75 @@ export async function deleteMaxCard(cardId: string): Promise<boolean> {
 
   return result.deletedCount > 0;
 }
+
+/**
+ * Получает топ карточек по количеству просмотров.
+ * 
+ * Возвращает до 10 карточек с наибольшим количеством просмотров.
+ * Если карточек меньше 10, возвращает все доступные карточки.
+ * 
+ * @param limit - максимальное количество карточек в топе (по умолчанию 10)
+ * @returns Массив карточек, отсортированных по количеству просмотров (по убыванию)
+ * 
+ * Успешное выполнение возвращает массив карточек со статусом "accepted" в формате MaxCard.
+ * В случае ошибки пробрасывает исключение MongoDB.
+ */
+export async function getTopCardsByViews(limit: number = 10): Promise<MaxCard[]> {
+  const cardsCollection = db.collection<MaxCardDocument>('max_cards');
+
+  const pipeline = [
+    { $match: { status: 'accepted' } },
+    {
+      $lookup: {
+        from: 'card_views',
+        let: { cardId: { $toString: '$_id' } },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ['$card_id', '$$cardId'],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalViews: { $sum: '$view_count' },
+            },
+          },
+        ],
+        as: 'viewStats',
+      },
+    },
+    {
+      $addFields: {
+        view_count: {
+          $ifNull: [{ $arrayElemAt: ['$viewStats.totalViews', 0] }, 0],
+        },
+      },
+    },
+    {
+      $project: {
+        viewStats: 0,
+      },
+    },
+    { $sort: { view_count: -1, date: -1 } },
+    { $limit: limit },
+  ];
+
+  const docs = await cardsCollection.aggregate(pipeline).toArray();
+
+  return docs.map((doc) => ({
+    id: doc._id ? doc._id.toString() : '',
+    category: doc.category,
+    title: doc.title,
+    subtitle: doc.subtitle,
+    text: doc.text,
+    status: doc.status,
+    date: doc.date.toISOString(),
+    view_count: doc.view_count ?? 0,
+    ...(doc.link ? { link: doc.link } : {}),
+    ...(doc.image ? { image: doc.image } : {}),
+    ...(doc.user_id ? { user_id: doc.user_id } : {}),
+  }));
+}

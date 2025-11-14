@@ -98,15 +98,51 @@ export function isMaxBridgeAvailable(): boolean {
 }
 
 /**
+ * Проверяет, является ли устройство мобильным
+ */
+function isMobileDevice(): boolean {
+  const webApp = window.WebApp;
+  if (webApp?.platform) {
+    const platform = webApp.platform.toLowerCase();
+    return platform === 'ios' || platform === 'android';
+  }
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+/**
  * Подписывается на событие закрытия мини-приложения и синхронно отправляет уведомление на сервер
  */
 export function onAppClose(userId: number, apiUrl: string): () => void {
   let isClosing = false;
+  let appWasOpened = false;
+  const isMobile = isMobileDevice();
+  const cleanupFunctions: Array<() => void> = [];
+  
+  if (isMobile) {
+    appWasOpened = true;
+    console.log(`✅ App marked as opened immediately for mobile user ${userId}`);
+  } else {
+    const openDelay = 2000;
+    const openTimeout = setTimeout(() => {
+      appWasOpened = true;
+      console.log(`✅ App marked as opened for desktop user ${userId}`);
+    }, openDelay);
+    
+    cleanupFunctions.push(() => {
+      clearTimeout(openTimeout);
+    });
+  }
   
   const sendNotification = () => {
     if (isClosing) {
       return;
     }
+    
+    if (!isMobile && !appWasOpened) {
+      console.log(`⚠️ Skipping app close notification - app was not fully opened yet (user ${userId})`);
+      return;
+    }
+    
     isClosing = true;
     
     const url = `${apiUrl}/on-app-close`;
@@ -150,8 +186,6 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
       console.error(`❌ Failed to notify app close for user ${userId}:`, error);
     }
   };
-
-  const cleanupFunctions: Array<() => void> = [];
 
   if (window.WebApp?.onEvent) {
     const handleBackButton = () => {
