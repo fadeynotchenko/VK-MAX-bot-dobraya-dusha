@@ -16,23 +16,37 @@ bot.command('top', topCommandHandler);
 // Обработчик callback кнопки "Топ"
 bot.on('message_callback', async (ctx) => {
   try {
-    const payload = ('payload' in ctx && ctx.payload) 
-      ? ctx.payload 
-      : ('callbackData' in ctx && ctx.callbackData) 
+    const callbackData = 
+      ('callbackData' in ctx && ctx.callbackData) 
         ? ctx.callbackData 
-        : undefined;
+        : ('payload' in ctx && ctx.payload) 
+          ? ctx.payload 
+          : ('data' in ctx && ctx.data)
+            ? ctx.data
+            : undefined;
     
-    if (payload === 'top_command') {
+    if (callbackData === 'top_command') {
       console.log('🏆 Обработка callback кнопки "Топ"');
       
       if ('answerCallbackQuery' in ctx && typeof ctx.answerCallbackQuery === 'function') {
         await ctx.answerCallbackQuery();
+      } else if ('answer' in ctx && typeof ctx.answer === 'function') {
+        await ctx.answer();
       }
       
       await topCommandHandler(ctx);
     }
   } catch (error: any) {
     console.error('❌ Ошибка при обработке callback кнопки "Топ":', error?.message || error);
+    
+    try {
+      if ('answerCallbackQuery' in ctx && typeof ctx.answerCallbackQuery === 'function') {
+        await ctx.answerCallbackQuery();
+      } else if ('answer' in ctx && typeof ctx.answer === 'function') {
+        await ctx.answer();
+      }
+    } catch (answerError) {
+    }
   }
 });
 

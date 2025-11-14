@@ -26,19 +26,13 @@ export async function botStartedHandler(ctx: Context) {
     console.warn('⚠️ Переменная окружения WEB_APP_URL не задана. Клавиатура со ссылкой не будет отправлена.');
   }
 
+  // Располагаем все кнопки вертикально (каждая кнопка в отдельном массиве)
   const keyboardRows: Parameters<typeof Keyboard.inlineKeyboard>[0] = [];
-  const buttons: Parameters<typeof Keyboard.inlineKeyboard>[0][0] = [];
   
   if (siteUrl && !isLocalhost) {
-    buttons.push(Keyboard.button.link('Открыть мини-приложение', siteUrl));
+    keyboardRows.push([Keyboard.button.link('Открыть мини-приложение', siteUrl)]);
   }
-  buttons.push(Keyboard.button.link('Перейти на VK Добро', 'https://dobro.mail.ru/'));
-  
-  if (buttons.length > 0) {
-    keyboardRows.push(buttons);
-  }
-  
-  // Кнопка "Топ" на втором горизонтальном уровне
+  keyboardRows.push([Keyboard.button.link('Перейти на VK Добро', 'https://dobro.mail.ru/')]);
   keyboardRows.push([Keyboard.button.callback('🏆 Топ', 'top_command')]);
 
   const attachments = keyboardRows.length
