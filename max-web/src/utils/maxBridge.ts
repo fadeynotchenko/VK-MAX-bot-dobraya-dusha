@@ -204,9 +204,11 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
       console.error(`❌ Не удалось подписаться на событие backButtonClicked для пользователя ${userId}:`, error);
     }
 
+    // Событие: изменение размера окна мини-приложения
+    // Отслеживаем закрытие через параметр isStateVisible === false
     const handleViewportChanged = (data: any) => {
-      if (data?.isStateVisible === false || data?.isExpanded === false) {
-        console.log(`📱 Обнаружено событие закрытия приложения (viewportChanged) для пользователя ${userId}`);
+      if (data?.isStateVisible === false) {
+        console.log(`📱 Обнаружено событие закрытия приложения (viewportChanged, isStateVisible=false) для пользователя ${userId}`);
         sendNotification();
       }
     };
@@ -221,56 +223,9 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
     } catch (error) {
       console.error(`❌ Не удалось подписаться на событие viewportChanged для пользователя ${userId}:`, error);
     }
+  } else {
+    console.warn(`⚠️ MAX Bridge API недоступен для пользователя ${userId}, отслеживание закрытия приложения не будет работать`);
   }
-
-  const handleBlur = () => {
-    console.log(`📱 Обнаружено событие закрытия приложения (blur) для пользователя ${userId}`);
-    sendNotification();
-  };
-  window.addEventListener('blur', handleBlur, { capture: true });
-  cleanupFunctions.push(() => {
-    window.removeEventListener('blur', handleBlur, { capture: true });
-  });
-
-  const handlePageHide = (event: PageTransitionEvent) => {
-    if (!event.persisted) {
-      console.log(`📱 Обнаружено событие закрытия приложения (pagehide) для пользователя ${userId}`);
-      sendNotification();
-    }
-  };
-  window.addEventListener('pagehide', handlePageHide, { capture: true });
-  cleanupFunctions.push(() => {
-    window.removeEventListener('pagehide', handlePageHide, { capture: true });
-  });
-
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'hidden') {
-      console.log(`📱 Обнаружено событие закрытия приложения (visibilitychange) для пользователя ${userId}`);
-      sendNotification();
-    }
-  };
-  document.addEventListener('visibilitychange', handleVisibilityChange, { capture: true });
-  cleanupFunctions.push(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange, { capture: true });
-  });
-
-  const handleUnload = () => {
-    console.log(`📱 Обнаружено событие закрытия приложения (unload) для пользователя ${userId}`);
-    sendNotification();
-  };
-  window.addEventListener('unload', handleUnload);
-  cleanupFunctions.push(() => {
-    window.removeEventListener('unload', handleUnload);
-  });
-
-  const handleBeforeUnload = () => {
-    console.log(`📱 Обнаружено событие закрытия приложения (beforeunload) для пользователя ${userId}`);
-    sendNotification();
-  };
-  window.addEventListener('beforeunload', handleBeforeUnload);
-  cleanupFunctions.push(() => {
-    window.removeEventListener('beforeunload', handleBeforeUnload);
-  });
 
   return () => {
     cleanupFunctions.forEach(cleanup => cleanup());
