@@ -187,41 +187,29 @@ export function onAppClose(userId: number, apiUrl: string): () => void {
     }
   };
 
+  // Используем событие WebAppViewportChanged для отслеживания закрытия приложения
+  // Согласно документации: https://dev.max.ru/docs/webapps/bridge
   if (window.WebApp?.onEvent) {
-    const handleBackButton = () => {
-      console.log(`📱 Обнаружено событие закрытия приложения (backButtonClicked) для пользователя ${userId}`);
-      sendNotification();
-    };
-
-    try {
-      window.WebApp.onEvent('backButtonClicked', handleBackButton);
-      cleanupFunctions.push(() => {
-        if (window.WebApp?.offEvent) {
-          window.WebApp.offEvent('backButtonClicked', handleBackButton);
-        }
-      });
-    } catch (error) {
-      console.error(`❌ Не удалось подписаться на событие backButtonClicked для пользователя ${userId}:`, error);
-    }
-
-    // Событие: изменение размера окна мини-приложения
-    // Отслеживаем закрытие через параметр isStateVisible === false
     const handleViewportChanged = (data: any) => {
+      console.log(`📱 Событие WebAppViewportChanged получено для пользователя ${userId}:`, data);
+      
+      // Проверяем, что приложение закрывается (isStateVisible === false)
       if (data?.isStateVisible === false) {
-        console.log(`📱 Обнаружено событие закрытия приложения (viewportChanged, isStateVisible=false) для пользователя ${userId}`);
+        console.log(`📱 Обнаружено закрытие приложения (WebAppViewportChanged, isStateVisible=false) для пользователя ${userId}`);
         sendNotification();
       }
     };
 
     try {
-      window.WebApp.onEvent('viewportChanged', handleViewportChanged);
+      window.WebApp.onEvent('WebAppViewportChanged', handleViewportChanged);
       cleanupFunctions.push(() => {
         if (window.WebApp?.offEvent) {
-          window.WebApp.offEvent('viewportChanged', handleViewportChanged);
+          window.WebApp.offEvent('WebAppViewportChanged', handleViewportChanged);
         }
       });
+      console.log(`✅ Подписка на событие WebAppViewportChanged установлена для пользователя ${userId}`);
     } catch (error) {
-      console.error(`❌ Не удалось подписаться на событие viewportChanged для пользователя ${userId}:`, error);
+      console.error(`❌ Не удалось подписаться на событие WebAppViewportChanged для пользователя ${userId}:`, error);
     }
   } else {
     console.warn(`⚠️ MAX Bridge API недоступен для пользователя ${userId}, отслеживание закрытия приложения не будет работать`);
